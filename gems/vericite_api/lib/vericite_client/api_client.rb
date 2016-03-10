@@ -7,7 +7,7 @@ require 'date'
 require 'json'
 require 'logger'
 require 'tempfile'
-require 'typhoeus'
+require 'faraday'
 require 'uri'
 
 module VeriCiteClient
@@ -91,7 +91,7 @@ module VeriCiteClient
         end
       end
 
-      Typhoeus::Request.new(url, req_opts)
+      Faraday::Request.new(url, req_opts)
     end
 
     # Check if the given MIME is a JSON MIME.
@@ -224,7 +224,7 @@ module VeriCiteClient
         form_params.each do |key, value|
           case value
           when File, Array, nil
-            # let typhoeus handle File, Array and nil parameters
+            # let Faraday handle File, Array and nil parameters
             data[key] = value
           else
             data[key] = value.to_s
@@ -315,7 +315,7 @@ module VeriCiteClient
       when :pipes
         param.join('|')
       when :multi
-        # return the array directly as typhoeus will handle it as expected
+        # return the array directly as Faraday will handle it as expected
         param
       else
         fail "unknown collection format: #{collection_format.inspect}"
