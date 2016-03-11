@@ -7,7 +7,7 @@ require 'date'
 require 'json'
 require 'logger'
 require 'tempfile'
-require 'typhoeus'
+require 'net/https'
 require 'uri'
 
 module VeriCiteClient
@@ -38,8 +38,7 @@ module VeriCiteClient
     # @return [Array<(Object, Fixnum, Hash)>] an array of 3 elements:
     #   the data deserialized from response body (could be nil), response status code and response headers.
     def call_api(http_method, path, opts = {})
-      request = build_request(http_method, path, opts)
-      response = request.run
+      response = build_request(http_method, path, opts)
 
       if @config.debugging
         @config.logger.debug "HTTP response body ~BEGIN~\n#{response.body}\n~END~\n"
@@ -68,30 +67,56 @@ module VeriCiteClient
       query_params = opts[:query_params] || {}
       form_params = opts[:form_params] || {}
 
-      
-
-      req_opts = {
-        :method => http_method,
-        :headers => header_params,
-        :params => query_params,
-        :timeout => @config.timeout,
-        :ssl_verifypeer => @config.verify_ssl,
-        :sslcert => @config.cert_file,
-        :sslkey => @config.key_file,
-        :verbose => @config.debugging
-      }
-
-      req_opts[:cainfo] = @config.ssl_ca_cert if @config.ssl_ca_cert
-
       if [:post, :patch, :put, :delete].include?(http_method)
         req_body = build_request_body(header_params, form_params, opts[:body])
-        req_opts.update :body => req_body
         if @config.debugging
           @config.logger.debug "HTTP request body param ~BEGIN~\n#{req_body}\n~END~\n"
         end
       end
 
-      Typhoeus::Request.new(url, req_opts)
+      uri = URI("#{url}?#{URI.encode_www_form(query_params)}")
+      https = Net::HTTP.new(uri.host,uri.port)
+      https.use_ssl = true
+      rootCA = '/etc/ssl/certs'
+      if File.directory? rootCA
+        https.ca_path = rootCA
+        https.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        https.verify_depth = 5
+      else
+        https.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
+
+      path = "#{uri.path}?#{uri.query}"
+      Rails.logger.info("VeriCite API path: #{path}")
+      case http_method
+      when :put
+        req = Net::HTTP::Put.new(uri)
+      when :post
+        req = Net::HTTP::Post.new(uri)
+      when :get
+        req = Net::HTTP::Get.new(uri)
+      when :delete
+        req = Net::HTTP::Delete.new(uri)
+      end    
+      req.body = req_body
+      # Headers
+      header_params.each do |key, value|
+        if key == :consumer
+          key = "consumer"
+          Rails.logger.info("VeriCite API fixing header consumer")
+        elsif key == :consumerSecret
+          key = "consumerSecret"
+          Rails.logger.info("VeriCite API fixing header consumerSecret")
+        end
+        Rails.logger.info("VeriCite API adding header: #{key} : #{value}")
+        req.add_field(key, value)
+      end 
+      Rails.logger.info("VeriCite API sendRequest: host: #{uri.host}, uri.path: #{path}, port: #{uri.port}, url: #{url}, header_params: #{header_params}, query_params: #{query_params}, form_params: #{form_params}, req_body: #{req_body}")
+      res = https.start{|con|
+        con.request(req)
+      }
+      Rails.logger.info("Response: #{res.body}") #TODO remove
+      res #TODO remove
     end
 
     # Check if the given MIME is a JSON MIME.

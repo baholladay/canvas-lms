@@ -22,15 +22,14 @@ module VeriCite
   class Response
     SUCCESSFUL_RETURN_CODES = (1..99)
 
+    attr_accessor :return_code
+    attr_accessor :assignment_id
+    attr_accessor :returned_object_id
+    
     def initialize()
-      # TODO: this has been overridden to always return success
-      success = true
-      @return_code = 1
-      @assignment_id = 10
     end
 
     def assignment_id
-     # extract_data_at('./assignmentid')
      @assignment_id
     end
 
@@ -82,11 +81,11 @@ module VeriCite
     # should be #object_id but, redefining that could have serious
     # consequences. So, we'll just not do that....
     def returned_object_id
-      extract_data_at('./objectID')
+      @returned_object_id
     end
 
     def return_code
-      @return_code ||= extract_data_at('./rcode', -1).to_i
+      @return_code
     end
 
     def return_message

@@ -18,6 +18,7 @@
 
 require 'vericite/response'
 require 'vericite_client'
+require 'digest/sha1'
 
 module VeriCite
   def self.state_from_similarity_score(similarity_score)
@@ -170,16 +171,31 @@ module VeriCite
         :user => student,
         :course => course,
         :assignment => assignment,
-        :tem => email(course)
+        :tem => email(course),
+        :role => submission.grants_right?(student, :grade) ? "Instructor" : "Learner"
       }
       responses = {}
       if submission.submission_type == 'online_upload'
         attachments = submission.attachments.select{ |a| a.vericiteable? && (asset_string.nil? || a.asset_string == asset_string) }
         attachments.each do |a|
-          responses[a.asset_string] = sendRequest(:submit_paper, '2', { :ptl => a.display_name, :pdata => a.open(), :ptype => '2' }.merge!(opts))
+          Rails.logger.info("VeriCite API attachment: #{a.content_type} size: #{a.size}");
+          paper_id = a.id
+          paper_title = a.display_name
+          paper_ext = a.extension
+          if paper_ext == nil
+            paper_ext = ""
+          end
+          paper_size = 100 # File.size(
+          responses[a.asset_string] = sendRequest(:submit_paper, '2', { :pid => paper_id, :ptl => paper_title, :pext => paper_ext, :psize => paper_size, :pdata => a.open(), :ptype => '2' }.merge!(opts))
         end
       elsif submission.submission_type == 'online_text_entry' && (asset_string.nil? || submission.asset_string == asset_string)
-        responses[submission.asset_string] = sendRequest(:submit_paper, '2', { :ptl => assignment.title, :pdata => submission.plaintext_body, :ptype => "1" }.merge!(opts))
+        paper_id = Digest::SHA1.hexdigest submission.plaintext_body
+        paper_ext = "html"
+        paper_title = "InlineSubmission.html"
+        plain_text = "<html>#{submission.plaintext_body}</html>"
+        paper_size = plain_text.bytesize
+        
+        responses[submission.asset_string] = sendRequest(:submit_paper, '2', {:pid => paperId, :ptl => paper_title, :pext => paper_ext, :psize => paper_size, :pdata => plain_text, :ptype => "1" }.merge!(opts))
       else
         raise "Unsupported submission type for VeriCite integration: #{submission.submission_type}"
       end
@@ -331,15 +347,20 @@ module VeriCite
       assignment = args.delete :assignment
       # default response is "ok" since VeriCite doesn't implement all functions      
       response = VeriCite::Response.new()
+      response.return_code = 1
+      response.assignment_id = 1
+      if assignment
+        response.assignment_id = assignment.id
+      end
+      consumer = @account_id
+      consumer_secret = @shared_secret
       if command == :create_assignment
         Rails.logger.info("VeriCite API sendRequest calling create_assignment")
                
         context_id = course.id
         assignment_id = assignment.id
-        consumer = @account_id
-        consumer_secret = @shared_secret
-        assignment_data = VeriCiteClient::AssignmentData.new();
-        assignment_data.assignment_title = assignment.title != nil ? assignment.title : assignment_id;
+        assignment_data = VeriCiteClient::AssignmentData.new()
+        assignment_data.assignment_title = assignment.title != nil ? assignment.title : assignment_id
         assignment_data.assignment_instructions = assignment.description != nil ? assignment.description : ""
         assignment_data.assignment_exclude_quotes = args["exclude_quoted"] != nil && args["exclude_quoted"] == 1 ? true : false
         assignment_data.assignment_due_date = assignment.due_at != nil ? assignment.due_at : 0
@@ -350,6 +371,35 @@ module VeriCite
         vericite_client.assignments_context_id_assignment_id_post(context_id, assignment_id, consumer, consumer_secret, assignment_data)
       elsif command == :submit_paper
         Rails.logger.info("VeriCite API sendRequest calling submit_paper")
+        
+        context_id = course.id
+        assignment_id = assignment.id
+        user_id = user.id
+        report_meta_data = VeriCiteClient::ReportMetaData.new()
+        report_meta_data.user_first_name = user.first_name
+        report_meta_data.user_last_name = user.last_name
+        report_meta_data.user_email = email(user)
+        report_meta_data.user_role = args[:role]
+        if assignment
+          report_meta_data.assignment_title = assignment.title != nil ? assignment.title : assignment_id
+        end
+        if course
+          report_meta_data.context_title = course.name != nil ? course.name : context_id
+        end
+        external_content_data = VeriCiteClient::ExternalContentData.new()
+        external_content_data.external_content_id = "#{consumer}/#{context_id}/#{assignment_id}/#{user_id}/#{args[:pid]}"
+        external_content_data.file_name = args[:ptl]
+        external_content_data.upload_content_type = args[:pext]
+        external_content_data.upload_content_length = args[:psize]
+        report_meta_data.external_content_data = external_content_data
+        Rails.logger.info("VeriCite API sendRequest calling submit_paper context_id: #{context_id}, user_id: #{user_id}, assignment_id: #{assignment_id}, consumer: #{consumer}, consumer_secret: #{consumer_secret}, report_meta_data #{report_meta_data.to_hash}, base_url: #{vericite_config.base_url}")
+        # @return [Array<ExternalContentUploadInfo>]
+        externalContentUploadInfoArr = vericite_client.reports_submit_request_context_id_assignment_id_user_id_post(context_id, assignment_id, user_id, consumer, consumer_secret, report_meta_data)
+        externalContentUploadInfoArr.each do |externalContentUploadInfo|
+          #API will return an upload URL to store the submission
+          Rails.logger.info("VeriCite API sendRequest calling submit_paper presigned: #{externalContentUploadInfo.url_post}")
+        end
+         response.returned_object_id = external_content_data.external_content_id
       elsif command == :enroll_student
         # not implemented, return default "ok"
         Rails.logger.info("VeriCite API sendRequest calling enroll_student")

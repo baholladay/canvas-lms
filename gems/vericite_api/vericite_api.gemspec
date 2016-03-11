@@ -14,7 +14,6 @@ Gem::Specification.new do |s|
   s.license     = "MIT"
 
 
-  s.add_runtime_dependency 'typhoeus', '~> 0.2', '>= 0.2.1'
   s.add_runtime_dependency 'json', '~> 1.4', '>= 1.4.6'
 
   s.add_development_dependency 'rspec', '~> 3.2', '>= 3.2.0'
