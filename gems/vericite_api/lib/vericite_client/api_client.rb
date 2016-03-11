@@ -6,8 +6,8 @@ VeriCiteV1
 require 'date'
 require 'json'
 require 'logger'
+require 'net/https'
 require 'tempfile'
-require 'typhoeus'
 require 'uri'
 
 module VeriCiteClient
@@ -38,8 +38,7 @@ module VeriCiteClient
     # @return [Array<(Object, Fixnum, Hash)>] an array of 3 elements:
     #   the data deserialized from response body (could be nil), response status code and response headers.
     def call_api(http_method, path, opts = {})
-      request = build_request(http_method, path, opts)
-      response = request.run
+      response = build_request(http_method, path, opts)
 
       if @config.debugging
         @config.logger.debug "HTTP response body ~BEGIN~\n#{response.body}\n~END~\n"
@@ -68,30 +67,39 @@ module VeriCiteClient
       query_params = opts[:query_params] || {}
       form_params = opts[:form_params] || {}
 
-      
-
-      req_opts = {
-        :method => http_method,
-        :headers => header_params,
-        :params => query_params,
-        :timeout => @config.timeout,
-        :ssl_verifypeer => @config.verify_ssl,
-        :sslcert => @config.cert_file,
-        :sslkey => @config.key_file,
-        :verbose => @config.debugging
-      }
-
-      req_opts[:cainfo] = @config.ssl_ca_cert if @config.ssl_ca_cert
-
       if [:post, :patch, :put, :delete].include?(http_method)
         req_body = build_request_body(header_params, form_params, opts[:body])
-        req_opts.update :body => req_body
         if @config.debugging
           @config.logger.debug "HTTP request body param ~BEGIN~\n#{req_body}\n~END~\n"
         end
       end
 
-      Typhoeus::Request.new(url, req_opts)
+      uri = URI.parse(url)
+      https = Net::HTTP.new(uri.host,uri.port)
+      https.use_ssl = true
+      #https.read_timeout = @config.timeout
+
+      @config.logger.debug "HTTP method #{http_method}\n"
+
+      case http_method
+        when 'put'
+          req = Net::HTTP::Put.new(uri.path)
+        when 'post'
+          req = Net::HTTP::Post.new(uri.path)
+        when 'delete'
+          req = Net::HTTP::Delete.new(uri.path)
+        else
+          req = Net::HTTP::Get.new(uri.path)
+      end
+
+      req.add_field("consumer", "longsight")
+      req.add_field("consumerSecret", "123456")
+
+      #req.initialize_http_header(header_params)
+
+      @config.logger.debug "HTTP request #{req}\n"
+
+      https.request(req)
     end
 
     # Check if the given MIME is a JSON MIME.
