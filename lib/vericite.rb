@@ -19,6 +19,7 @@
 require 'vericite/response'
 require 'vericite_client'
 require 'digest/sha1'
+require 'date'
 
 module VeriCite
   def self.state_from_similarity_score(similarity_score)
@@ -178,24 +179,26 @@ module VeriCite
       if submission.submission_type == 'online_upload'
         attachments = submission.attachments.select{ |a| a.vericiteable? && (asset_string.nil? || a.asset_string == asset_string) }
         attachments.each do |a|
-          Rails.logger.info("VeriCite API attachment: #{a.content_type} size: #{a.size}");
+          Rails.logger.info("VeriCite API attachment: #{a.content_type} size: #{a.size} displayName: #{a.display_name}");
           paper_id = a.id
-          paper_title = a.display_name
+          paper_title = File.basename(a.display_name, ".*")
           paper_ext = a.extension
+          paper_type = a.content_type
           if paper_ext == nil
             paper_ext = ""
           end
           paper_size = 100 # File.size(
-          responses[a.asset_string] = sendRequest(:submit_paper, '2', { :pid => paper_id, :ptl => paper_title, :pext => paper_ext, :psize => paper_size, :pdata => a.open(), :ptype => '2' }.merge!(opts))
+          responses[a.asset_string] = sendRequest(:submit_paper, '2', { :pid => paper_id, :ptl => paper_title, :pext => paper_ext, :ptype => paper_type, :psize => paper_size, :pdata => a.open(), :ptype => '2' }.merge!(opts))
         end
       elsif submission.submission_type == 'online_text_entry' && (asset_string.nil? || submission.asset_string == asset_string)
         paper_id = Digest::SHA1.hexdigest submission.plaintext_body
         paper_ext = "html"
-        paper_title = "InlineSubmission.html"
+        paper_title = "InlineSubmission"
         plain_text = "<html>#{submission.plaintext_body}</html>"
+        paper_type = "text/html"
         paper_size = plain_text.bytesize
         
-        responses[submission.asset_string] = sendRequest(:submit_paper, '2', {:pid => paperId, :ptl => paper_title, :pext => paper_ext, :psize => paper_size, :pdata => plain_text, :ptype => "1" }.merge!(opts))
+        responses[submission.asset_string] = sendRequest(:submit_paper, '2', {:pid => paper_id, :ptl => paper_title, :pext => paper_ext, :ptype => paper_type, :psize => paper_size, :pdata => plain_text, :ptype => "1" }.merge!(opts))
       else
         raise "Unsupported submission type for VeriCite integration: #{submission.submission_type}"
       end
@@ -332,7 +335,7 @@ module VeriCite
       require 'net/http'
       
       
-      Rails.logger.info("VeriCite API sendRequest: course: #{command}, assignment: #{fcmd}, settings: #{args}, host: #{@host}")
+      Rails.logger.info("VeriCite API sendRequest: course: #{command}")
       
       vericite_config = VeriCiteClient::Configuration.new()
       vericite_config.host = @host
@@ -355,19 +358,23 @@ module VeriCite
       consumer = @account_id
       consumer_secret = @shared_secret
       if command == :create_assignment
-        Rails.logger.info("VeriCite API sendRequest calling create_assignment")
+        Rails.logger.info("VeriCite API sendRequest calling create_assignment : #{args['exclude_quoted']}")
                
         context_id = course.id
+        
         assignment_id = assignment.id
         assignment_data = VeriCiteClient::AssignmentData.new()
         assignment_data.assignment_title = assignment.title != nil ? assignment.title : assignment_id
         assignment_data.assignment_instructions = assignment.description != nil ? assignment.description : ""
-        assignment_data.assignment_exclude_quotes = args["exclude_quoted"] != nil && args["exclude_quoted"] == 1 ? true : false
-        assignment_data.assignment_due_date = assignment.due_at != nil ? assignment.due_at : 0
+        assignment_data.assignment_exclude_quotes = args["exclude_quoted"] != nil && args["exclude_quoted"] == '1' ? true : false
+        assignment_data.assignment_due_date = 0
+        if assignment.due_at != nil
+          # convert to epoch time in milli
+          assignment_data.assignment_due_date = assignment.due_at.to_time.utc.to_i * 1000
+        end
         assignment_data.assignment_grade = assignment.points_possible != nil ? assignment.points_possible : -1
         
         Rails.logger.info("VeriCite API sendRequest calling create_assignment: context_id: #{context_id}, assignment_id: #{assignment_id}, consumer: #{consumer}, consumer_secret: #{consumer_secret}, assignment_data: #{assignment_data.to_hash}, base_url: #{vericite_config.base_url}")
-        
         vericite_client.assignments_context_id_assignment_id_post(context_id, assignment_id, consumer, consumer_secret, assignment_data)
       elsif command == :submit_paper
         Rails.logger.info("VeriCite API sendRequest calling submit_paper")
@@ -398,8 +405,10 @@ module VeriCite
         externalContentUploadInfoArr.each do |externalContentUploadInfo|
           #API will return an upload URL to store the submission
           Rails.logger.info("VeriCite API sendRequest calling submit_paper presigned: #{externalContentUploadInfo.url_post}")
+          res = api_client.uploadfile(externalContentUploadInfo.url_post, args[:pdata])
+          Rails.logger.info("VeriCite API response: #{res.body}")
         end
-         response.returned_object_id = external_content_data.external_content_id
+        response.returned_object_id = external_content_data.external_content_id
       elsif command == :enroll_student
         # not implemented, return default "ok"
         Rails.logger.info("VeriCite API sendRequest calling enroll_student")

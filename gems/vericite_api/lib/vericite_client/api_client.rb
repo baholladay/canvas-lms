@@ -44,11 +44,11 @@ module VeriCiteClient
         @config.logger.debug "HTTP response body ~BEGIN~\n#{response.body}\n~END~\n"
       end
 
-      unless response.success?
+      unless response.kind_of? Net::HTTPSuccess
         fail ApiError.new(:code => response.code,
-                          :response_headers => response.headers,
+                          :response_headers => response.to_hash,
                           :response_body => response.body),
-             response.status_message
+             response.message
       end
 
       if opts[:return_type]
@@ -56,7 +56,7 @@ module VeriCiteClient
       else
         data = nil
       end
-      return data, response.code, response.headers
+      return data, response.code, response.to_hash
     end
 
     def build_request(http_method, path, opts = {})
@@ -115,8 +115,6 @@ module VeriCiteClient
       res = https.start{|con|
         con.request(req)
       }
-      Rails.logger.info("Response: #{res.body}") #TODO remove
-      res #TODO remove
     end
 
     # Check if the given MIME is a JSON MIME.
@@ -142,7 +140,7 @@ module VeriCiteClient
       return download_file(response) if return_type == 'File'
 
       # ensuring a default content type
-      content_type = response.headers['Content-Type'] || 'application/json'
+      content_type = response.to_hash['Content-Type'] || 'application/json'
 
       fail "Content-Type is not supported: #{content_type}" unless json_mime?(content_type)
 
@@ -204,7 +202,7 @@ module VeriCiteClient
     # @see Configuration#temp_folder_path
     # @return [Tempfile] the file downloaded
     def download_file(response)
-      content_disposition = response.headers['Content-Disposition']
+      content_disposition = response.to_hash['Content-Disposition']
       if content_disposition
         filename = content_disposition[/filename=['"]?([^'"\s]+)['"]?/, 1]
         prefix = sanitize_filename(filename)
@@ -344,6 +342,17 @@ module VeriCiteClient
         param
       else
         fail "unknown collection format: #{collection_format.inspect}"
+      end
+    end
+    
+    def uploadfile(path, file)
+      url = URI.parse(path)
+      
+      Net::HTTP.start(url.host) do |http|
+        http.send_request("PUT", url.request_uri, (file.is_a?(String) ? file : file.read), {
+          # This is required, or Net::HTTP will add a default unsigned content-type.
+          "content-type" => "",
+        })
       end
     end
   end
