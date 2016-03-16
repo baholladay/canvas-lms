@@ -509,10 +509,8 @@ class Submission < ActiveRecord::Base
           vericite ||= VeriCite::Client.new(*self.context.vericite_settings)
           res = vericite.generateReport(self, asset_string)
           if res[:similarity_score]
+            data[:similarity_score_time] = Time.now.to_i
             data[:similarity_score] = res[:similarity_score].to_f
-            data[:web_overlap] = res[:web_overlap].to_f
-            data[:publication_overlap] = res[:publication_overlap].to_f
-            data[:student_overlap] = res[:student_overlap].to_f
             data[:state] = VeriCite.state_from_similarity_score data[:similarity_score]
             data[:status] = 'scored'
           else

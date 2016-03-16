@@ -217,13 +217,10 @@ module VeriCite
       course = assignment.context
       object_id = submission.vericite_data[asset_string][:object_id] rescue nil
       res = nil
-      res = sendRequest(:generate_report, 2, :oid => object_id, :utp => '2', :user => course, :course => course, :assignment => assignment) if object_id
+      res = sendRequest(:get_scores, 2, :oid => object_id, :utp => '2', :user => user, :course => course, :assignment => assignment) if object_id
       data = {}
       if res
-        data[:similarity_score] = res.css("originalityscore").first.try(:content)
-        data[:web_overlap] = res.css("web_overlap").first.try(:content)
-        data[:publication_overlap] = res.css("publication_overlap").first.try(:content)
-        data[:student_overlap] = res.css("student_paper_overlap").first.try(:content)
+        data[:similarity_score] = res.similarity_score
       end
       data
     end
@@ -409,6 +406,24 @@ module VeriCite
           Rails.logger.info("VeriCite API response: #{res.body}")
         end
         response.returned_object_id = external_content_data.external_content_id
+      elsif command == :get_scores
+        Rails.logger.info("VeriCite API sendRequest calling get_scores")
+        
+        context_id = course.id
+        assignment_id = assignment.id
+        user_id = user.id
+        
+        # @return [Array<ReportScoreReponse>]
+        Rails.logger.info("VeriCite API context_id: #{context_id}, assignment_id: #{assignment_id}, user_id: #{user_id}, xid: #{args[:oid]}")
+        reportScoreReponseArr = vericite_client.reports_scores_context_id_get(context_id, consumer, consumer_secret, {:'assignment_id' => assignment_id, :'user_id' => user_id, :'external_content_id' => args[:oid]})
+        reportScoreReponseArr.each do |reportScoreReponse|
+          # should only be 1 answer
+         Rails.logger.info("VeriCite API reportScoreReponseArr user: #{reportScoreReponse.user}, assignment: #{reportScoreReponse.assignment}, external_content_id: #{reportScoreReponse.external_content_id}, score: #{reportScoreReponse.score}")
+          if reportScoreReponse.external_content_id ==  args[:oid] && reportScoreReponse.score.is_a?(Integer) && reportScoreReponse.score >= 0 
+            Rails.logger.info("VeriCite API setting response score")   
+            response.similarity_score = Float(reportScoreReponse.score)
+          end
+        end        
       elsif command == :enroll_student
         # not implemented, return default "ok"
         Rails.logger.info("VeriCite API sendRequest calling enroll_student")

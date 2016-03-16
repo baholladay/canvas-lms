@@ -25,12 +25,17 @@ module VeriCite
     attr_accessor :return_code
     attr_accessor :assignment_id
     attr_accessor :returned_object_id
+    attr_accessor :similarity_score
     
     def initialize()
     end
 
     def assignment_id
      @assignment_id
+    end
+
+    def similarity_score
+      @similarity_score
     end
 
     def css(*args)
@@ -56,26 +61,8 @@ module VeriCite
     # up the wording, and then using this to display public facing error messages.
     def public_error_message
       return '' if success?
-      case return_code
-      when 216
-        I18n.t('vericite.error_216', "The student limit for this account has been reached. Please contact your account administrator.")
-      when 217
-        I18n.t('vericite.error_217', "The vericite product for this account has expired. Please contact your sales agent to renew the vericite product.")
-      when 414
-        I18n.t('vericite.error_414', "The originality report for this submission is not available yet.")
-      when 415
-        I18n.t('vericite.error_415', "The originality score for this submission is not available yet.")
-      when 1007
-        I18n.t('vericite.error_1007', "The uploaded file is too big.")
-      when 1009
-        I18n.t('vericite.error_1009', "Invalid file type. (Valid file types are MS Word, Acrobat PDF, Postscript, Text, HTML, WordPerfect (WPD) and Rich Text Format.)")
-      when 1013
-        I18n.t('vericite.error_1013', "The student submission must be more than twenty words of text in order for it to be rated by vericite.")
-      when 1023
-        I18n.t('vericite.error_1023', "The PDF file could not be read. Please make sure that the file is not password protected.")
-      else
-        I18n.t('vericite.error_default', "There was an error submitting to vericite. Please try resubmitting the file before contacting support.")
-      end
+      # TODO
+      @public_error_message
     end
 
     # should be #object_id but, redefining that could have serious
@@ -89,7 +76,7 @@ module VeriCite
     end
 
     def return_message
-      extract_data_at('./rmessage')
+      @return_message
     end
 
     def success?
@@ -106,13 +93,11 @@ module VeriCite
     end
 
     def extract_data_at(xpath, default = '')
-      return default unless return_data_node.present?
-      found_node = return_data_node.at_xpath(xpath)
-      found_node.present? ? found_node.content : default
+      return default
     end
 
     def return_data_node
-      @return_data_node ||= @document.at_xpath('/returndata')
+      @return_data_node
     end
   end
 end

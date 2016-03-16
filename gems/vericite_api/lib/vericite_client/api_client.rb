@@ -73,7 +73,7 @@ module VeriCiteClient
           @config.logger.debug "HTTP request body param ~BEGIN~\n#{req_body}\n~END~\n"
         end
       end
-
+      Rails.logger.info("query_params #{URI.encode_www_form(query_params)}")
       uri = URI("#{url}?#{URI.encode_www_form(query_params)}")
       https = Net::HTTP.new(uri.host,uri.port)
       https.use_ssl = true
