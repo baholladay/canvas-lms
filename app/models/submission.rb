@@ -536,9 +536,9 @@ class Submission < ActiveRecord::Base
       vericite = VeriCite::Client.new(*self.context.vericite_settings)
       self.send_later(:check_vericite_status)
       if self.grants_right?(user, :grade)
-        vericite.submissionReportUrl(self, asset_string)
+        vericite.submissionReportUrl(self, user, asset_string)
       elsif self.grants_right?(user, :view_vericite_report)
-        vericite.submissionStudentReportUrl(self, asset_string)
+        vericite.submissionStudentReportUrl(self, user, asset_string)
       end
     else
       nil

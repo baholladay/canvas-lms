@@ -141,8 +141,6 @@ module VeriCite
 
     def createOrUpdateAssignment(assignment, settings)
       course = assignment.context
-      # vericite generally expects the timezone to be set the same as
-      # the vericite account is set up as.
       today = course.time_zone.today
       settings = VeriCite::Client.normalize_assignment_vericite_settings(settings)
 
@@ -225,20 +223,30 @@ module VeriCite
       data
     end
 
-    def submissionReportUrl(submission, asset_string)
+    def submissionReportUrl(submission, current_user, asset_string)
       user = submission.user
       assignment = submission.assignment
       course = assignment.context
       object_id = submission.vericite_data[asset_string][:object_id] rescue nil
-      sendRequest(:generate_report, 1, :oid => object_id, :utp => '2', :user => course, :course => course, :assignment => assignment)
+      response = sendRequest(:generate_report, 1, :oid => object_id, :utp => '2', :current_user => current_user, :user => user, :course => course, :assignment => assignment)
+      if response != nil
+        response.report_url
+      else
+        nil
+      end
     end
 
-    def submissionStudentReportUrl(submission, asset_string)
+    def submissionStudentReportUrl(submission, current_user, asset_string)
       user = submission.user
       assignment = submission.assignment
       course = assignment.context
       object_id = submission.vericite_data[asset_string][:object_id] rescue nil
-      sendRequest(:generate_report, 1, :oid => object_id, :utp => '1', :user => user, :course => course, :assignment => assignment, :tem => email(course))
+      response = sendRequest(:generate_report, 1, :oid => object_id, :utp => '1', :current_user => current_user, :user => user, :course => course, :assignment => assignment, :tem => email(course))
+      if response != nil
+        response.report_url
+      else
+        nil
+      end
     end
 
     def submissionPreviewUrl(submission, asset_string)
@@ -262,76 +270,8 @@ module VeriCite
       sendRequest(:list_papers, 2, :assignment => assignment, :course => course, :user => course, :utp => '1', :tem => email(course))
     end
 
-    def request_md5(params)
-      keys_used = []
-      str = ""
-      keys = [:aid,:assign,:assignid,:cid,:cpw,:ctl,:diagnostic,:dis,:dtdue,:dtstart,:dtpost,:encrypt,:fcmd,:fid,:gmtime,:newassign,:newupw,:oid,:pfn,:pln,:ptl,:ptype,:said,:tem,:uem,:ufn,:uid,:uln,:upw,:utp]
-      keys.each do |key|
-        keys_used << key if params[key] && !params[key].empty?
-        str += (params[key] || "")
-      end
-      str += @shared_secret
-      Digest::MD5.hexdigest(str)
-    end
-
-    def escape_params(params)
-      escaped_params = {}
-      params.each do |key, value|
-        if value.is_a?(String)
-          escaped_params[key] = CGI.escape(value).gsub("+", "%20")
-          # vericite uses %20 to encode spaces (instead of +)
-        else
-          escaped_params[key] = value
-        end
-      end
-      return escaped_params
-    end
-
-    def prepare_params(command, fcmd, args)
-      user = args.delete :user
-      course = args.delete :course
-      assignment = args.delete :assignment
-      post = args.delete :post
-      params = args.merge({
-        :gmtime => Time.now.utc.strftime("%Y%m%d%H%M")[0,11],
-        :fid => @functions[command],
-        :fcmd => fcmd.to_s,
-        :encrypt => '0',
-        :aid => @account_id,
-        :src => '15',
-        :dis => '1'
-      })
-      if user
-        params[:uid] = id(user)
-        params[:uem] = email(user)
-        if user.is_a?(Course)
-          params[:ufn] = user.name
-          params[:uln] = "Course"
-        else
-          params[:ufn] = user.first_name
-          params[:uln] = user.last_name
-          params[:uln] = "Student" if params[:uln].empty?
-        end
-      end
-      if course
-        params[:cid] = id(course)
-        params[:ctl] = course.name
-      end
-      if assignment
-        params[:assign] = "#{assignment.title} - #{assignment.id}"
-        params[:assignid] = id(assignment)
-      end
-      params[:diagnostic] = "1" if @testing
-
-      params[:md5] = request_md5(params)
-      params = escape_params(params) if post
-      return params
-    end
 
     def sendRequest(command, fcmd, args)
-      require 'net/http'
-      
-      
       Rails.logger.info("VeriCite API sendRequest: course: #{command}")
       
       vericite_config = VeriCiteClient::Configuration.new()
@@ -423,46 +363,54 @@ module VeriCite
             Rails.logger.info("VeriCite API setting response score")   
             response.similarity_score = Float(reportScoreReponse.score)
           end
-        end        
+        end
+      elsif command == :generate_report
+        Rails.logger.info("VeriCite API sendRequest calling generate_report")
+        
+        context_id = course.id
+        assignment_id_filter = assignment.id
+        user_id = user.id
+        current_user = args.delete :current_user
+        token_user = current_user.id
+        token_user_role = 'Learner'
+        if args[:utp] == '2'
+          #instructor
+          token_user_role = 'Instructor'
+        end
+        Rails.logger.info("VeriCite API 7 #{token_user_role}")
+        # @return [Array<ReportURLLinkReponse>]
+        begin
+          reportURLLinkReponseArr = vericite_client.reports_urls_context_id_get(context_id, assignment_id_filter, consumer, consumer_secret, token_user, token_user_role, {:'user_id_filter' => user_id, :'external_content_id_filter' => args[:oid]})
+          Rails.logger.info("VeriCite API 8")
+        rescue => e
+          Rails.logger.info("VeriCite API error detected")
+          Rails.logger.info("VeriCite API #{e}")
+          Rails.logger.info("VeriCite API #{e.backtrace}")
+        end
+        reportURLLinkReponseArr.each do |reportURLLinkReponse|
+          #should only be 1 url
+          Rails.logger.info("VeriCite API: url: #{reportURLLinkReponse.url}  eId: #{reportURLLinkReponse.external_content_id}")
+          if reportURLLinkReponse.external_content_id ==  args[:oid]
+            response.report_url = reportURLLinkReponse.url
+          end
+        end
       elsif command == :enroll_student
         # not implemented, return default "ok"
         Rails.logger.info("VeriCite API sendRequest calling enroll_student")
+      elsif command == :create_user
+        # not implemented, return default "ok"
+        Rails.logger.info("VeriCite API sendRequest calling create_user")
+      elsif command == :create_course
+        # not implemented, return default "ok"
+        Rails.logger.info("VeriCite API sendRequest calling create_course")
+      elsif command == :show_paper
+        # not implemented, return default "ok"
+        Rails.logger.info("VeriCite API sendRequest calling show_paper")
+      elsif command == :list_papers
+        # not implemented, return default "ok"
+        Rails.logger.info("VeriCite API sendRequest calling list_papers")
       end
 
-      # post = args[:post] # gets deleted in prepare_params
-      # params = prepare_params(command, fcmd, args)
-# 
-      # if post
-        # mp = Multipart::Post.new
-        # query, headers = mp.prepare_query(params)
-        # http = Net::HTTP.new(@host, 443)
-        # http.use_ssl = true
-        # http_response = http.start{|con|
-          # req = Net::HTTP::Post.new(@endpoint, headers)
-          # con.read_timeout = 30
-          # begin
-            # res = con.request(req, query)
-          # rescue => e
-            # Rails.logger.error("VeriCite API error for account_id #{@account_id}: POSTING FAILED")
-            # Rails.logger.error(params.to_json)
-          # end
-        # }
-      # else
-        # requestParams = ""
-        # params.each do |key, value|
-          # next if value.nil?
-          # requestParams += "&#{URI.escape(key.to_s)}=#{CGI.escape(value.to_s)}"
-        # end
-        # if params[:fcmd] == '1'
-          # return "https://#{@host}#{@endpoint}?#{requestParams}"
-        # else
-          # http = Net::HTTP.new(@host, 443)
-          # http.use_ssl = true
-          # http_response = http.start{|conn|
-            # conn.get("#{@endpoint}?#{requestParams}")
-          # }
-        # end
-      # end
 
       return nil if @testing
 

@@ -66,6 +66,19 @@
   }
 }
 
+#assignment_vericite_settings {
+  min-width: 400px;
+  label {
+    width: 100%;
+  }
+  .js-exclude-small-matches-options {
+    margin-left: 21px;
+    input[type="radio"] {
+      margin-top: 13px;
+    }
+  }
+}
+
 #assignment_show {
   .assignment-title {
     display: table-row;

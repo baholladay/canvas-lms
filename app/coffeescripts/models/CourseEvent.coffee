@@ -141,6 +141,8 @@ define [
             I18n.t("field_label.allow_wiki_comments", "Allow Wiki Comments")
         when "turnitin_comments"
             I18n.t("field_label.turnitin_comments", "Turnitin Comments")
+        when "vericite_comments"
+            I18n.t("field_label.vericite_comments", "VeriCite Comments")
         when "self_enrollment"
             I18n.t("field_label.self_enrollment", "Self Enrollment")
         when "license"

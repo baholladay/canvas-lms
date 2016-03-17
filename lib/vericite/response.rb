@@ -26,12 +26,17 @@ module VeriCite
     attr_accessor :assignment_id
     attr_accessor :returned_object_id
     attr_accessor :similarity_score
+    attr_accessor :report_url
     
     def initialize()
     end
 
     def assignment_id
      @assignment_id
+    end
+    
+    def report_url
+     @report_url
     end
 
     def similarity_score

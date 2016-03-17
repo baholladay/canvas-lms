@@ -4,6 +4,7 @@ define [
   'jquery'
   'underscore'
   'compiled/gradebook2/Turnitin'
+  'compiled/gradebook2/VeriCite'
   'compiled/util/round'
   'jquery.ajaxJSON'
   'jquery.instructure_misc_helpers' # raw
@@ -101,6 +102,9 @@ define [
       if turnitin = extractData(opts.submission)
         specialClasses.push('turnitin')
         innerContents += "<span class='gradebook-cell-turnitin #{htmlEscape turnitin.state}-score' />"
+      if vericite = extractData(opts.submission)
+        specialClasses.push('vericite')
+        innerContents += "<span class='gradebook-cell-vericite #{htmlEscape vericite.state}-score' />"
 
       tooltipText = $.map(specialClasses, (c)-> GRADEBOOK_TRANSLATIONS["submission_tooltip_#{c}"]).join ', '
 

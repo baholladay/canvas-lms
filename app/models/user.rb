@@ -20,6 +20,7 @@ require 'atom'
 
 class User < ActiveRecord::Base
   include TurnitinID
+  include VericiteID
 
   # this has to be before include Context to prevent a circular dependency in Course
   def self.sortable_name_order_by_clause(table = nil)

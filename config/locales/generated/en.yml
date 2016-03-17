@@ -104,6 +104,7 @@ en:
     tab_terms: Terms
     tab_users: Users
     turnitin_pledge: "This assignment submission is my own, original work"
+    vericite_pledge: "This assignment submission is my own, original work"
   account_97b34646: Account
   account_authorization_config: 
     default_delegated_login_handle_name: Login
@@ -345,11 +346,17 @@ en:
     links: 
       turnitin: 
         confirm_settings: "confirm Turnitin settings"
+      vericite: 
+        confirm_settings: "confirm VeriCite settings"
     notices: 
       turnitin: 
         checking_settings: "checking Turnitin settings..."
         invalid_settings: "invalid Turnitin settings, please check your account id and shared secret from Turnitin"
         setings_confirmed: "Turnitin settings confirmed!"
+      vericite: 
+        checking_settings: "checking VeriCite settings..."
+        invalid_settings: "invalid VeriCite settings, please check your account id and shared secret from VeriCite"
+        setings_confirmed: "VeriCite settings confirmed!"
     titles: 
       configure_report: "Configure Report"
       open_registration_delegated_warning_dialog: "An External Identity Provider is Enabled"
@@ -825,6 +832,7 @@ en:
         modify_users: "Go back and edit the list of users"
       confirm_global_announcement: "This announcement will be shown to *all* Canvas users. Confirm that you want to create it."
       confirm_turnitin_settings_link: "confirm Turnitin settings"
+      confirm_vericite_settings_link: "confirm VeriCite settings"
       course_roles: "Course roles:"
       create_courses_description: "(Account Administrators can always create courses)"
       create_courses_title: "Who Can Create New Courses"
@@ -921,6 +929,12 @@ en:
         turnitin_host: "Turnitin Host"
         turnitin_pledge: "Turnitin Pledge"
         turnitin_shared_secret: "Turnitin Shared Secret"
+        vericite: VeriCite
+        vericite_account_id: "VeriCite Account ID"
+        vericite_comments: "Submission Comments"
+        vericite_host: "VeriCite Host"
+        vericite_pledge: "VeriCite Pledge"
+        vericite_shared_secret: "VeriCite Shared Secret"
         users_can_edit_name: "Users can edit their name"
       links: 
         add_admins: "Add Account Admins"
@@ -997,6 +1011,9 @@ en:
       turnitin_comments_help: "these comments will be shown to students when submitting a Turnitin-enabled assignment"
       turnitin_pledge_help: "students must check a box acknowledging that they agree with this pledge"
       turnitin_settings_title: "Turnitin Settings"
+      vericite_comments_help: "these comments will be shown to students when submitting a VeriCite-enabled assignment"
+      vericite_pledge_help: "students must check a box acknowledging that they agree with this pledge"
+      vericite_settings_title: "VeriCite Settings"
       update_settings_button: "Update Settings"
     show: 
       courses_crumb: Courses
@@ -2030,6 +2047,9 @@ en:
       turnitin: Turnitin
       turnitin_enabled: "Turnitin has been enabled for this assignment."
       turnitin_enabled_short: "(Turnitin enabled)"
+      vericite: VeriCite
+      vericite_enabled: "VeriCite has been enabled for this assignment."
+      vericite_enabled_short: "(VeriCite enabled)"
       until: Until
     show_locked: 
       labels: 
@@ -2073,6 +2093,7 @@ en:
       label: 
         external_tool_new_tab: "Load This Tool In A New Tab"
         turnitin_enabled: "Enable Turnitin Submissions"
+        vericite_enabled: "Enable VeriCite Submissions"
       labels: 
         allow_file_uploads: "File Uploads"
         allow_media_recordings: "Media Recordings"
