@@ -282,7 +282,7 @@
         <% end %>
         <% if @presenter.vericite_enabled? %>
           <%
-            turntitin = nil
+            vericite = nil
             url = '#'
             if can_do(submission, @current_user, :view_vericite_report)
               vericite = assignment_presenter.vericite
@@ -294,12 +294,16 @@
               end
             end
           %>
-          <a class="tooltip" title="<%= t('titles.vericite_score', "VeriCite similarity score -- more information") %>" href="<%= url %>" style="<%= 'visibility: hidden;' if !vericite %>" target="_blank">
-            <%= vericite ? image_tag("vericite_#{vericite && vericite[:state]}_score.png", :alt => t('icons.vericite_results', 'See VeriCite results')) : image_tag("blank.png", :alt => '') %>
-            <span class="tooltip_wrap right">
-              <span class="tooltip_text"><%= t(:see_vericite_results, "See VeriCite results") %></span>
-            </span>
-          </a>
+          
+          <span class="vericite_score_container" style="<%= 'visibility: hidden;' if !vericite %>">
+			  <span class="vericite_score_container_caret <%= vericite && vericite[:state] %>_score"></span>        
+	          <a title="<%= t('titles.vericite_score', "VeriCite similarity score -- more information") %>" href="<%= url %>" target="_blank" class="tooltip not_external vericite_similarity_score <%= vericite && vericite[:state] %>_score">
+	          	<%= vericite && vericite[:similarity_score] %>%
+				<span class="tooltip_wrap right">
+	              <span class="tooltip_text"><%= t(:see_vericite_results, "See VeriCite results") %></span>
+	            </span>
+	          </a>
+          </span>
         <% end %>
       </td>
       <% end %>
