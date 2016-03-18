@@ -63,8 +63,30 @@ class Submission < ActiveRecord::Base
 
   serialize :turnitin_data, Hash
   
-  serialize :vericite_data, Hash
-
+  serialize :vericite_data_hash, Hash
+  
+  def vericite_data()
+    self.vericite_data_hash ||= {}
+    # check to see if the score is stale, if so, delete it and fetch again
+    updateScores = false
+    self.vericite_data_hash.keys.each do |asset_string|
+      data = self.vericite_data_hash[asset_string]
+      next unless data && data.is_a?(Hash) && data[:object_id]
+      if !data[:similarity_score_time].blank?
+        scoreAge = Time.now.to_i - data[:similarity_score_time]
+        # only cache the score for 20 minutes
+        if(scoreAge > 1200)
+          Rails.logger.info("VeriCite API vericite_data resetting score")
+          updateScores = true
+        end
+      end
+    end
+    if updateScores
+      check_vericite_status
+    end 
+    self.vericite_data_hash
+  end
+    
   validates_presence_of :assignment_id, :user_id
   validates_length_of :body, :maximum => maximum_long_text_length, :allow_nil => true, :allow_blank => true
   validates_length_of :published_grade, :maximum => maximum_string_length, :allow_nil => true, :allow_blank => true
@@ -254,7 +276,7 @@ class Submission < ActiveRecord::Base
     can :view_turnitin_report
     
     given { |user, session|
-      vericite_data &&
+      vericite_data_hash &&
       user_can_read_grade?(user, session) &&
       (assignment.context.grants_right?(user, session, :manage_grades) ||
         case assignment.vericite_settings[:originality_report_visibility]
@@ -493,18 +515,36 @@ class Submission < ActiveRecord::Base
   
   # VeriCite
   VERICITE_STATUS_RETRY = 11
+  
   def check_vericite_status(attempt=1)
-    self.vericite_data ||= {}
+    self.vericite_data_hash ||= {}
     vericite = nil
     needs_retry = false
-
+    Rails.logger.info("VeriCite API check_vericite_status")
     # check all assets in the vericite_data (self.vericite_assets is only the
     # current assets) so that we get the status for assets of previous versions
     # of the submission as well
-    self.vericite_data.keys.each do |asset_string|
-      data = self.vericite_data[asset_string]
+    self.vericite_data_hash.keys.each do |asset_string|
+      data = self.vericite_data_hash[asset_string]
       next unless data && data.is_a?(Hash) && data[:object_id]
-      if data[:similarity_score].blank?
+      # check to see if the score is stale, if so, delete it and fetch again
+      recheckScore = false
+      if !data[:similarity_score].blank?
+        Rails.logger.info("VeriCite API looking up score age")
+        scoreAge = Time.now.to_i - data[:similarity_score_time]
+        Rails.logger.info("VeriCite API #{scoreAge}")
+        # only cache the score for 20 minutes
+        if(scoreAge > 1200)
+          Rails.logger.info("VeriCite API resetting score")
+          # set score to nil to trigger a new call
+          recheckScore = true
+          # we only want to try updating the score 1 time
+          if attempt < VERICITE_STATUS_RETRY
+            attempt = VERICITE_STATUS_RETRY - 1
+          end
+        end
+      end
+      if recheckScore || data[:similarity_score].blank?
         if attempt < VERICITE_STATUS_RETRY
           vericite ||= VeriCite::Client.new(*self.context.vericite_settings)
           res = vericite.generateReport(self, asset_string)
@@ -513,17 +553,18 @@ class Submission < ActiveRecord::Base
             data[:similarity_score] = res[:similarity_score].to_f
             data[:state] = VeriCite.state_from_similarity_score data[:similarity_score]
             data[:status] = 'scored'
+            data[:submit_time] = Time.now.to_i if data[:submit_time].blank?
           else
             needs_retry ||= true
           end
-        else
+        elsif !recheckScore # if we already have a score, continue to use it
           data[:status] = 'error'
           data[:public_error_message] = I18n.t('vericite.no_score_after_retries', 'VeriCite has not returned a score after %{max_tries} attempts to retrieve one.', max_tries: VERICITE_RETRY)
         end
       else
         data[:status] = 'scored'
       end
-      self.vericite_data[asset_string] = data
+      self.vericite_data_hash[asset_string] = data
     end
 
     send_at((2 ** attempt).minutes.from_now, :check_vericite_status, attempt + 1) if needs_retry
@@ -532,7 +573,7 @@ class Submission < ActiveRecord::Base
   end
 
   def vericite_report_url(asset_string, user)
-    if self.vericite_data && self.vericite_data[asset_string] && self.vericite_data[asset_string][:similarity_score]
+    if self.vericite_data_hash && self.vericite_data_hash[asset_string] && self.vericite_data_hash[asset_string][:similarity_score]
       vericite = VeriCite::Client.new(*self.context.vericite_settings)
       self.send_later(:check_vericite_status)
       if self.grants_right?(user, :grade)
@@ -546,11 +587,11 @@ class Submission < ActiveRecord::Base
   end
 
   def prep_for_submitting_to_vericite
-    last_attempt = self.vericite_data && self.vericite_data[:last_processed_attempt]
+    last_attempt = self.vericite_data_hash && self.vericite_data_hash[:last_processed_attempt]
     @submit_to_vericite = false
     if self.vericiteable? && (!last_attempt || last_attempt < self.attempt) && (@group_broadcast_submission || !self.group)
-      if self.vericite_data[:last_processed_attempt] != self.attempt
-        self.vericite_data[:last_processed_attempt] = self.attempt
+      if self.vericite_data_hash[:last_processed_attempt] != self.attempt
+        self.vericite_data_hash[:last_processed_attempt] = self.attempt
       end
       @submit_to_vericite = true
     end
@@ -583,9 +624,9 @@ class Submission < ActiveRecord::Base
         send_later_enqueue_args(:submit_to_vericite, { :run_at => 5.minutes.from_now }.merge(VERICITE_JOB_OPTS), attempt + 1)
       else
         assignment_error = assignment.vericite_settings[:error]
-        self.vericite_data[:status] = 'error'
-        self.vericite_data[:assignment_error] = assignment_error if assignment_error.present?
-        self.vericite_data[:student_error] = vericite_enrollment.error_hash if vericite_enrollment.error?
+        self.vericite_data_hash[:status] = 'error'
+        self.vericite_data_hash[:assignment_error] = assignment_error if assignment_error.present?
+        self.vericite_data_hash[:student_error] = vericite_enrollment.error_hash if vericite_enrollment.error?
         self.vericite_data_changed!
         self.save
       end
@@ -595,10 +636,10 @@ class Submission < ActiveRecord::Base
     # Submit the file(s)
     submission_response = vericite.submitPaper(self)
     submission_response.each do |res_asset_string, response|
-      self.vericite_data[res_asset_string].merge!(response)
+      self.vericite_data_hash[res_asset_string].merge!(response)
       self.vericite_data_changed!
       if !response[:object_id] && !(attempt < VERICITE_RETRY)
-        self.vericite_data[res_asset_string][:status] = 'error'
+        self.vericite_data_hash[res_asset_string][:status] = 'error'
       end
     end
 
@@ -626,22 +667,22 @@ class Submission < ActiveRecord::Base
   end
 
   def delete_vericite_errors
-    self.vericite_data.delete(:status)
-    self.vericite_data.delete(:assignment_error)
-    self.vericite_data.delete(:student_error)
+    self.vericite_data_hash.delete(:status)
+    self.vericite_data_hash.delete(:assignment_error)
+    self.vericite_data_hash.delete(:student_error)
   end
   private :delete_vericite_errors
 
   def reset_vericite_assets
-    self.vericite_data ||= {}
+    self.vericite_data_hash ||= {}
     delete_vericite_errors
     vericite_assets.each do |a|
-      asset_data = self.vericite_data[a.asset_string] || {}
+      asset_data = self.vericite_data_hash[a.asset_string] || {}
       asset_data[:status] = 'pending'
       [:error_code, :error_message, :public_error_message].each do |key|
         asset_data.delete(key)
       end
-      self.vericite_data[a.asset_string] = asset_data
+      self.vericite_data_hash[a.asset_string] = asset_data
       self.vericite_data_changed!
     end
   end

@@ -213,7 +213,7 @@ module VeriCite
       user = submission.user
       assignment = submission.assignment
       course = assignment.context
-      object_id = submission.vericite_data[asset_string][:object_id] rescue nil
+      object_id = submission.vericite_data_hash[asset_string][:object_id] rescue nil
       res = nil
       res = sendRequest(:get_scores, 2, :oid => object_id, :utp => '2', :user => user, :course => course, :assignment => assignment) if object_id
       data = {}
@@ -227,7 +227,7 @@ module VeriCite
       user = submission.user
       assignment = submission.assignment
       course = assignment.context
-      object_id = submission.vericite_data[asset_string][:object_id] rescue nil
+      object_id = submission.vericite_data_hash[asset_string][:object_id] rescue nil
       response = sendRequest(:generate_report, 1, :oid => object_id, :utp => '2', :current_user => current_user, :user => user, :course => course, :assignment => assignment)
       if response != nil
         response.report_url
@@ -240,7 +240,7 @@ module VeriCite
       user = submission.user
       assignment = submission.assignment
       course = assignment.context
-      object_id = submission.vericite_data[asset_string][:object_id] rescue nil
+      object_id = submission.vericite_data_hash[asset_string][:object_id] rescue nil
       response = sendRequest(:generate_report, 1, :oid => object_id, :utp => '1', :current_user => current_user, :user => user, :course => course, :assignment => assignment, :tem => email(course))
       if response != nil
         response.report_url
@@ -253,7 +253,7 @@ module VeriCite
       user = submission.user
       assignment = submission.assignment
       course = assignment.context
-      object_id = submission.vericite_data[asset_string][:object_id] rescue nil
+      object_id = submission.vericite_data_hash[asset_string][:object_id] rescue nil
       sendRequest(:show_paper, 1, :oid => object_id, :utp => '1', :user => user, :course => course, :assignment => assignment, :tem => email(course))
     end
 
@@ -261,7 +261,7 @@ module VeriCite
       user = submission.user
       assignment = submission.assignment
       course = assignment.context
-      object_id = submission.vericite_data[asset_string][:object_id] rescue nil
+      object_id = submission.vericite_data_hash[asset_string][:object_id] rescue nil
       sendRequest(:show_paper, 1, :oid => object_id, :utp => '1', :user => user, :course => course, :assignment => assignment, :tem => email(course))
     end
 
