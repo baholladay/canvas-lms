@@ -579,7 +579,9 @@ class SubmissionsController < ApplicationController
     @submission = @assignment.submissions.where(user_id: params[:submission_id]).first
     @asset_string = params[:asset_string]
     if authorized_action(@submission, @current_user, :read)
-      if (report_url = @submission.vericite_data[@asset_string] && @submission.vericite_data[@asset_string][:report_url])
+      # vericite_data is a function, so store the results in an array to prevent multiple calls
+      vericite_data = @submission.vericite_data
+      if (report_url = vericite_data[@asset_string] && vericite_data[@asset_string][:report_url])
         url = polymorphic_url([:retrieve, @context, :external_tools], url:report_url, display:'borderless')
       else
         url = @submission.vericite_report_url(@asset_string, @current_user) rescue nil

@@ -20,13 +20,15 @@ require 'nokogiri'
 
 module VeriCite
   class Response
-    SUCCESSFUL_RETURN_CODES = (1..99)
+    SUCCESSFUL_RETURN_CODES = (200..299)
 
     attr_accessor :return_code
     attr_accessor :assignment_id
     attr_accessor :returned_object_id
     attr_accessor :similarity_score
     attr_accessor :report_url
+    attr_accessor :public_error_message
+    attr_accessor :return_message
     
     def initialize()
     end
@@ -65,8 +67,6 @@ module VeriCite
     # users. So we're picking out the most common error messages we see, fixing
     # up the wording, and then using this to display public facing error messages.
     def public_error_message
-      return '' if success?
-      # TODO
       @public_error_message
     end
 
@@ -85,7 +85,7 @@ module VeriCite
     end
 
     def success?
-      SUCCESSFUL_RETURN_CODES.cover?(return_code)
+      SUCCESSFUL_RETURN_CODES.cover?(Integer(return_code))
     end
 
     private

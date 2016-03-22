@@ -23,7 +23,7 @@ module VeriCiteClient
     # @return [Array<ExternalContentUploadInfo>]
     def assignments_context_id_assignment_id_post(context_id, assignment_id, consumer, consumer_secret, assignment_data, opts = {})
       data, status_code, headers = assignments_context_id_assignment_id_post_with_http_info(context_id, assignment_id, consumer, consumer_secret, assignment_data, opts)
-      return data
+      return data, status_code, headers
     end
 
     # 
@@ -106,7 +106,7 @@ module VeriCiteClient
     # @return [Array<ReportScoreReponse>]
     def reports_scores_context_id_get(context_id, consumer, consumer_secret, opts = {})
       data, status_code, headers = reports_scores_context_id_get_with_http_info(context_id, consumer, consumer_secret, opts)
-      return data
+      return data, status_code, headers
     end
 
     # 
@@ -187,7 +187,7 @@ module VeriCiteClient
     # @return [Array<ExternalContentUploadInfo>]
     def reports_submit_request_context_id_assignment_id_user_id_post(context_id, assignment_id, user_id, consumer, consumer_secret, report_meta_data, opts = {})
       data, status_code, headers = reports_submit_request_context_id_assignment_id_user_id_post_with_http_info(context_id, assignment_id, user_id, consumer, consumer_secret, report_meta_data, opts)
-      return data
+      return data, status_code, headers
     end
 
     # 
@@ -276,7 +276,7 @@ module VeriCiteClient
     # @return [Array<ReportURLLinkReponse>]
     def reports_urls_context_id_get(context_id, assignment_id_filter, consumer, consumer_secret, token_user, token_user_role, opts = {})
       data, status_code, headers = reports_urls_context_id_get_with_http_info(context_id, assignment_id_filter, consumer, consumer_secret, token_user, token_user_role, opts)
-      return data
+      return data, status_code, headers
     end
 
     # 

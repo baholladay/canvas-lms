@@ -73,7 +73,6 @@ module VeriCiteClient
           @config.logger.debug "HTTP request body param ~BEGIN~\n#{req_body}\n~END~\n"
         end
       end
-      Rails.logger.info("query_params #{URI.encode_www_form(query_params)}")
       uri = URI("#{url}?#{URI.encode_www_form(query_params)}")
       https = Net::HTTP.new(uri.host,uri.port)
       https.use_ssl = true
@@ -87,7 +86,6 @@ module VeriCiteClient
       end
 
       path = "#{uri.path}?#{uri.query}"
-      Rails.logger.info("VeriCite API path: #{path}")
       case http_method
       when :put
         req = Net::HTTP::Put.new(uri)
@@ -103,15 +101,11 @@ module VeriCiteClient
       header_params.each do |key, value|
         if key == :consumer
           key = "consumer"
-          Rails.logger.info("VeriCite API fixing header consumer")
         elsif key == :consumerSecret
           key = "consumerSecret"
-          Rails.logger.info("VeriCite API fixing header consumerSecret")
         end
-        Rails.logger.info("VeriCite API adding header: #{key} : #{value}")
         req.add_field(key, value)
       end 
-      Rails.logger.info("VeriCite API sendRequest: host: #{uri.host}, uri.path: #{path}, port: #{uri.port}, url: #{url}, header_params: #{header_params}, query_params: #{query_params}, form_params: #{form_params}, req_body: #{req_body}")
       res = https.start{|con|
         con.request(req)
       }
@@ -348,12 +342,19 @@ module VeriCiteClient
     def uploadfile(path, file)
       url = URI.parse(path)
       
-      Net::HTTP.start(url.host) do |http|
+      response = Net::HTTP.start(url.host) do |http|
         http.send_request("PUT", url.request_uri, (file.is_a?(String) ? file : file.read), {
           # This is required, or Net::HTTP will add a default unsigned content-type.
           "content-type" => "",
         })
       end
+      unless response.kind_of? Net::HTTPSuccess
+        fail ApiError.new(:code => response.code,
+                          :response_headers => response.to_hash,
+                          :response_body => response.body),
+             response.message
+      end
+      response
     end
   end
 end
