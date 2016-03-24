@@ -352,21 +352,44 @@ module VeriCite
         elsif command == :get_scores
           context_id = course.id
           assignment_id = assignment.id
-          user_id = user.id         
-          # @return [Array<ReportScoreReponse>]
-          data, status_code, headers = vericite_client.reports_scores_context_id_get(context_id, consumer, consumer_secret, {:'assignment_id' => assignment_id, :'user_id' => user_id, :'external_content_id' => args[:oid]})
-          # check status code
-          response.return_code = status_code
-          if response.error?
-            response.return_message = "An error has occurred while getting scores from VeriCite."
-            response.public_error_message = response.return_message 
-            fail "Failed to get scores for site: #{context_id}, assignment: #{assignment_id}, user: #{user_id},  exId: #{args[:oid]}"
+          user_id = user.id
+          user_score_cache_key = "vericite_scores/#{consumer}/#{context_id}/#{user_id}"
+          # first check if the cache already has the score:
+          user_score_map = Rails.cache.read(user_score_cache_key)
+          if user_score_map == nil
+            # we need to look up the user scores in VeriCite for this course
+            # @return [Array<ReportScoreReponse>]
+            data, status_code, headers = vericite_client.reports_scores_context_id_get(context_id, consumer, consumer_secret, {:'user_id' => user_id})
+            # check status code
+            response.return_code = status_code
+            if response.error?
+             response.return_message = "An error has occurred while getting scores from VeriCite."
+             response.public_error_message = response.return_message 
+             fail "Failed to get scores for site: #{context_id}, assignment: #{assignment_id}, user: #{user_id},  exId: #{args[:oid]}"
+            end
+            # create the user scores map and cache it
+            user_score_map = {}
+            data.each do |reportScoreReponse|
+              if reportScoreReponse.score.is_a?(Integer) && reportScoreReponse.score >= 0
+                # since external content id's are unique, we can store it as the key
+                user_score_map[reportScoreReponse.external_content_id] = Float(reportScoreReponse.score)
+              end
+            end
+            # cache the user score map for a short period of time
+            Rails.cache.fetch(user_score_cache_key, :expires_in => 5.minutes) do
+              user_score_map
+            end
+          else
+            # since we didn't have to consult VeriCite, set response status to 200
+            response.return_code = 200
           end
-          # settings the score is a flag to signal success
-          data.each do |reportScoreReponse|
-            # score is only returned if it is >= 0 and matches this id
-            if reportScoreReponse.external_content_id ==  args[:oid] && reportScoreReponse.score.is_a?(Integer) && reportScoreReponse.score >= 0    
-              response.similarity_score = Float(reportScoreReponse.score)
+          
+          # the user score map shouldn't be empty now (either grabbed from the cache or VeriCite)
+          if user_score_map != nil
+            user_score_map.each do |key, score|
+              if key ==  args[:oid] && score >= 0
+                response.similarity_score = score
+              end
             end
           end
         elsif command == :generate_report

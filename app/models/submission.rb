@@ -95,10 +95,10 @@ class Submission < ActiveRecord::Base
       scoreAge = Time.now.to_i - data[:similarity_score_time]
       scoreCacheTime = 1200 # by default cache scores for 20 mins
       # change the cache based on how long it has been since the paper was submitted
-      if !data[:submit_time].blank? && (now - data[:submit_time]) > 86400
-        # it has been more than 24 hours since this was submitted, increase cache time
-        scoreCacheTime = 86400
-      end
+      # if !data[:submit_time].blank? && (now - data[:submit_time]) > 86400
+      # # it has been more than 24 hours since this was submitted, increase cache time
+      #   scoreCacheTime = 86400
+      # end
       # only cache the score for 20 minutes or 24 hours based on when the paper was submitted
       if(scoreAge > scoreCacheTime)
         #check if we just recently requested this score
