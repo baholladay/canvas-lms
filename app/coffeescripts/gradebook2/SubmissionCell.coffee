@@ -3,7 +3,6 @@ define [
   'str/htmlEscape'
   'jquery'
   'underscore'
-  'compiled/gradebook2/Turnitin'
   'compiled/gradebook2/VeriCite'
   'compiled/util/round'
   'jquery.ajaxJSON'
@@ -99,9 +98,6 @@ define [
       innerContents = null if opts.submission.workflow_state == 'pending_review' && !isNaN(innerContents);
       innerContents ?= if submission_type then SubmissionCell.submissionIcon(submission_type) else '-'
 
-      if turnitin = extractData(opts.submission)
-        specialClasses.push('turnitin')
-        innerContents += "<span class='gradebook-cell-turnitin #{htmlEscape turnitin.state}-score' />"
       if vericite = extractData(opts.submission)
         specialClasses.push('vericite')
         innerContents += "<span class='gradebook-cell-vericite #{htmlEscape vericite.state}-score' />"

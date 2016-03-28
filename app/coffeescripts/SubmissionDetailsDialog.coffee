@@ -2,10 +2,8 @@ define [
   'i18n!submission_details_dialog'
   'jquery'
   'jst/SubmissionDetailsDialog'
-  'compiled/gradebook2/Turnitin'
   'compiled/gradebook2/VeriCite'
   'jst/_submission_detail' # a partial needed by the SubmissionDetailsDialog template
-  'jst/_turnitinScore' # a partial needed by the submission_detail partial
   'jst/_vericiteScore' # a partial needed by the submission_detail partial
   'jquery.ajaxJSON'
   'jquery.disableWhileLoading'
@@ -97,10 +95,8 @@ define [
           comment.url = "#{@options.context_url}/users/#{comment.author_id}"
           urlPrefix = "#{location.protocol}//#{location.host}"
           comment.image_url = "#{urlPrefix}/images/users/#{comment.author_id}"
-        submission.turnitin = extractDataFor(submission, "submission_#{submission.id}", @options.context_url)
         submission.vericite = extractDataFor(submission, "submission_#{submission.id}", @options.context_url)
         for attachment in submission.attachments || []
-          attachment.turnitin = extractDataFor(submission, "attachment_#{attachment.id}", @options.context_url)
           attachment.vericite = extractDataFor(submission, "attachment_#{attachment.id}", @options.context_url)
       @submission.grade = "EX" if @submission.excused
       @dialog.html(submissionDetailsDialog(@submission))
