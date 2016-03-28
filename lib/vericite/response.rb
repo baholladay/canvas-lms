@@ -85,7 +85,11 @@ module VeriCite
     end
 
     def success?
-      SUCCESSFUL_RETURN_CODES.cover?(Integer(return_code))
+      begin
+        return_code != nil && SUCCESSFUL_RETURN_CODES.cover?(Integer(return_code))
+      rescue
+        false
+      end
     end
 
     private
