@@ -2436,6 +2436,52 @@ describe Assignment do
       expect(assignment.turnitin_settings[:current]).to be_nil
     end
   end
+  
+  context "vericite settings" do
+    before(:once) { assignment_model(course: @course) }
+
+    it "should sanitize bad data" do
+      assignment = @assignment
+      assignment.vericite_settings = {
+        :originality_report_visibility => 'invalid',
+        :exclude_quoted => true
+      }
+      expect(assignment.vericite_settings).to eql({
+        :originality_report_visibility => 'immediate',
+        :exclude_quoted => '1'
+      })
+    end
+
+    it "should persist :created across changes" do
+      assignment = @assignment
+      assignment.vericite_settings = VeriCite::Client.default_assignment_vericite_settings
+      assignment.save
+      assignment.vericite_settings[:created] = true
+      assignment.save
+      assignment.reload
+      expect(assignment.vericite_settings[:created]).to be_truthy
+
+      assignment.vericite_settings = VeriCite::Client.default_assignment_vericite_settings.merge(:exclude_quoted => '0')
+      assignment.save
+      assignment.reload
+      expect(assignment.vericite_settings[:created]).to be_truthy
+    end
+
+    it "should clear out :current" do
+      assignment = @assignment
+      assignment.vericite_settings = VeriCite::Client.default_assignment_vericite_settings
+      assignment.save
+      assignment.vericite_settings[:current] = true
+      assignment.save
+      assignment.reload
+      expect(assignment.vericite_settings[:current]).to be_truthy
+
+      assignment.vericite_settings = VeriCite::Client.default_assignment_vericite_settings.merge(:exclude_quoted => '0')
+      assignment.save
+      assignment.reload
+      expect(assignment.vericite_settings[:current]).to be_nil
+    end
+  end
 
   context "generate comments from submissions" do
     def create_and_submit
@@ -2920,6 +2966,22 @@ describe Assignment do
         expect(json["submissions"].map { |s|
           s["id"]
         }.sort).to eq turnitin_submissions.map(&:id).sort
+      end
+      
+      it 'chooses the student with vericite data to represent' do
+        vericite_submissions = @groups.map do |group|
+          rep = group.users.shuffle.first
+          vericite_submission, *others = @assignment.grade_student(rep, grade: 10)
+          vericite_submission.update_attribute :vericite_data, {blah: 1}
+          vericite_submission
+        end
+
+        @assignment.update_attribute :vericite_enabled, true
+        json = @assignment.speed_grader_json(@teacher)
+
+        expect(json["submissions"].map { |s|
+          s["id"]
+        }.sort).to eq vericite_submissions.map(&:id).sort
       end
 
       it 'prefers people with submissions' do
