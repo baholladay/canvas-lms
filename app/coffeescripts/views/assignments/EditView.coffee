@@ -23,7 +23,7 @@ define [
   'jquery.toJSON'
   'compiled/jquery.rails_flash_notifications'
 ], (INST, I18n, ValidatedFormView, _, $, wikiSidebar, template,
-userSettings, TurnitinSettings, TurnitinSettingsDialog, VeriCiteSettings, VeriCiteSettingsDialog, preventDefault, MissingDateDialog,
+userSettings, TurnitinSettings, VeriCiteSettings, TurnitinSettingsDialog, VeriCiteSettingsDialog, preventDefault, MissingDateDialog,
 AssignmentGroupSelector, GroupCategorySelector, toggleAccessibly, RCEKeyboardShortcuts) ->
 
   class EditView extends ValidatedFormView
