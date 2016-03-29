@@ -3,11 +3,12 @@ define [
   'str/htmlEscape'
   'jquery'
   'underscore'
+  'compiled/gradebook2/Turnitin'
   'compiled/gradebook2/VeriCite'
   'compiled/util/round'
   'jquery.ajaxJSON'
   'jquery.instructure_misc_helpers' # raw
-], (GRADEBOOK_TRANSLATIONS, htmlEscape,$, _, {extractData},round) ->
+], (GRADEBOOK_TRANSLATIONS, htmlEscape,$, _, {extractDataTurnitin}, {extractDataVeriCite},round) ->
 
   class SubmissionCell
 
@@ -98,7 +99,10 @@ define [
       innerContents = null if opts.submission.workflow_state == 'pending_review' && !isNaN(innerContents);
       innerContents ?= if submission_type then SubmissionCell.submissionIcon(submission_type) else '-'
 
-      if vericite = extractData(opts.submission)
+      if turnitin = extractDataTurnitin(opts.submission)    
+        specialClasses.push('turnitin')   
+        innerContents += "<span class='gradebook-cell-turnitin #{htmlEscape turnitin.state}-score' />"
+      if vericite = extractDataVeriCite(opts.submission)
         specialClasses.push('vericite')
         innerContents += "<span class='gradebook-cell-vericite #{htmlEscape vericite.state}-score' />"
 

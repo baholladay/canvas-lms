@@ -4,7 +4,7 @@ define [
 ], (I18n, {max, invert}) ->
 
   VeriCite =
-    extractData: (submission) ->
+    extractDataVeriCite: (submission) ->
       return unless submission?.vericite_data
       data = items: []
   
@@ -25,12 +25,12 @@ define [
       data.state = stateList[max(states)]
       data
 
-    extractDataFor: (submission, key, urlPrefix) ->
+    extractDataForVeriCite: (submission, key, urlPrefix) ->
       data = submission.vericite_data
       return {} unless data and data[key] and data[key].similarity_score?
       data = data[key]
       data.state = "#{data.state || 'no'}_score"
       data.score = "#{data.similarity_score}%"
-      data.reportUrl = "#{data.report_url}"
+      data.reportUrl = "#{urlPrefix}/assignments/#{submission.assignment_id}/submissions/#{submission.user_id}/vericite/#{key}"
       data.tooltip = I18n.t('tooltip.score', 'VeriCite Similarity Score - See detailed report')
       data
