@@ -280,7 +280,7 @@ module VeriCite
       begin
         vericite_config = VeriCiteClient::Configuration.new()
         vericite_config.host = @host
-        vericite_config.base_path = '/api/v1' 
+        vericite_config.base_path = '/lms/v1' 
         api_client = VeriCiteClient::ApiClient.new(vericite_config)
         vericite_client = VeriCiteClient::DefaultApi.new(api_client)
         
