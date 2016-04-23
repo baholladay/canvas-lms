@@ -373,7 +373,7 @@ class Assignment < ActiveRecord::Base
   def create_in_vericite
     return false unless self.context.vericite_settings
     return true if self.vericite_settings[:current]
-    vericite = VeriCite::Client.new(*self.context.vericite_settings)
+    vericite = VeriCite::Client.new()
     res = vericite.createOrUpdateAssignment(self, self.vericite_settings)
 
     # make sure the defaults get serialized

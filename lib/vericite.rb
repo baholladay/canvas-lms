@@ -33,11 +33,16 @@ module VeriCite
   class Client
     attr_accessor :endpoint, :account_id, :shared_secret, :host, :testing
 
-    def initialize(account_id, shared_secret, host=nil, testing=false)
-      @host = host || "api.vericite.com"
+    def initialize(testing=false)
+      @host = Canvas::Plugin.find(:vericite).settings[:host] || "api.vericite.com"
       @endpoint = "/api.asp"
+      account_id = Canvas::Plugin.find(:vericite).settings[:account_id]
+      shared_secret = Canvas::Plugin.find(:vericite).settings[:shared_secret]
       raise "Account ID required" unless account_id
       raise "Shared secret required" unless shared_secret
+      
+      Rails.logger.info("host: #{@host}, account_id: #{account_id}, secret: #{shared_secret}")
+      
       @account_id = account_id
       @shared_secret = shared_secret
       @testing = testing

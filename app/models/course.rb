@@ -27,7 +27,6 @@ class Course < ActiveRecord::Base
   include TimeZoneHelper
   include ContentLicenses
   include TurnitinID
-  include VericiteID
 
   attr_accessor :teacher_names
   attr_writer :student_count, :primary_enrollment_type, :primary_enrollment_role_id, :primary_enrollment_rank, :primary_enrollment_state, :invitation
@@ -57,7 +56,6 @@ class Course < ActiveRecord::Base
                   :open_enrollment,
                   :allow_wiki_comments,
                   :turnitin_comments,
-                  :vericite_comments,
                   :self_enrollment,
                   :license,
                   :indexed,
@@ -1798,19 +1796,9 @@ class Course < ActiveRecord::Base
     # has valid settings
     account.turnitin_settings
   end
-  
-  def vericite_settings
-    # check if somewhere up the account chain vericite is enabled and
-    # has valid settings
-    account.vericite_settings
-  end
 
   def turnitin_pledge
     self.account.closest_turnitin_pledge
-  end
-  
-  def vericite_pledge
-    self.account.closest_vericite_pledge
   end
 
   def all_turnitin_comments
@@ -1822,23 +1810,13 @@ class Course < ActiveRecord::Base
     self.extend TextHelper
     format_message(comments).first
   end
-  
-  def all_vericite_comments
-    comments = self.account.closest_vericite_comments || ""
-    if self.vericite_comments && !self.vericite_comments.empty?
-      comments += "\n\n" if comments && !comments.empty?
-      comments += self.vericite_comments
-    end
-    self.extend TextHelper
-    format_message(comments).first
-  end
 
   def turnitin_enabled?
     !!self.turnitin_settings
   end
   
   def vericite_enabled?
-    !!self.vericite_settings
+    Canvas::Plugin.find(:vericite).try(:enabled?)
   end
 
   def self.migrate_content_links(html, from_context, to_context, supported_types=nil, user_to_check_for_permission=nil)
@@ -2021,7 +1999,7 @@ class Course < ActiveRecord::Base
       :default_view, :show_total_grade_as_points,
       :show_all_discussion_entries, :open_enrollment,
       :storage_quota, :tab_configuration, :allow_wiki_comments,
-      :turnitin_comments, :vericite_comments, :self_enrollment, :license, :indexed, :locale,
+      :turnitin_comments, :self_enrollment, :license, :indexed, :locale,
       :hide_final_grade, :hide_distribution_graphs,
       :allow_student_discussion_topics, :allow_student_discussion_editing, :lock_all_announcements,
       :organize_epub_by_content_type ]

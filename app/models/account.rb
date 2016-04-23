@@ -22,8 +22,6 @@ class Account < ActiveRecord::Base
   include Context
   attr_accessible :name, :turnitin_account_id, :turnitin_shared_secret,
     :turnitin_host, :turnitin_comments, :turnitin_pledge,
-    :vericite_account_id, :vericite_shared_secret,
-    :vericite_host, :vericite_comments, :vericite_pledge,
     :default_time_zone, :parent_account, :settings, :default_storage_quota,
     :default_storage_quota_mb, :storage_quota, :ip_filters, :default_locale,
     :default_user_storage_quota_mb, :default_group_storage_quota_mb, :integration_id, :brand_config_md5
@@ -657,20 +655,10 @@ class Account < ActiveRecord::Base
     return if secret.blank?
     self.turnitin_crypted_secret, self.turnitin_salt = Canvas::Security.encrypt_password(secret, 'instructure_turnitin_secret_shared')
   end
-  
-  def vericite_shared_secret=(secret)
-    return if secret.blank?
-    self.vericite_crypted_secret, self.vericite_salt = Canvas::Security.encrypt_password(secret, 'instructure_vericite_secret_shared')
-  end
 
   def turnitin_shared_secret
     return nil unless self.turnitin_salt && self.turnitin_crypted_secret
     Canvas::Security.decrypt_password(self.turnitin_crypted_secret, self.turnitin_salt, 'instructure_turnitin_secret_shared')
-  end
-  
-  def vericite_shared_secret
-    return nil unless self.vericite_salt && self.vericite_crypted_secret
-    Canvas::Security.decrypt_password(self.vericite_crypted_secret, self.vericite_salt, 'instructure_vericite_secret_shared')
   end
 
   def self.account_chain(starting_account_id)
@@ -1273,32 +1261,6 @@ class Account < ActiveRecord::Base
       self.turnitin_comments
     else
       self.parent_account.try(:closest_turnitin_comments)
-    end
-  end
-  
-  def vericite_settings
-    return @vericite_settings if defined?(@vericite_settings)
-    if self.vericite_account_id.present? && self.vericite_shared_secret.present?
-      @vericite_settings = [self.vericite_account_id, self.vericite_shared_secret, self.vericite_host]
-    else
-      @vericite_settings = self.parent_account.try(:vericite_settings)
-    end
-  end
-
-  def closest_vericite_pledge
-    if self.vericite_pledge && !self.vericite_pledge.empty?
-      self.vericite_pledge
-    else
-      res = self.parent_account.try(:closest_vericite_pledge)
-      res ||= t('#account.vericite_pledge', "This assignment submission is my own, original work")
-    end
-  end
-
-  def closest_vericite_comments
-    if self.vericite_comments && !self.vericite_comments.empty?
-      self.vericite_comments
-    else
-      self.parent_account.try(:closest_vericite_comments)
     end
   end
 

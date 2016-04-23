@@ -566,7 +566,7 @@ class Submission < ActiveRecord::Base
         if attempt < VERICITE_STATUS_RETRY
           # keep track of when we asked for this score, so if it fails, we don't keep trying immediately again (i.e. wain 20 sec before trying again)
           data[:similarity_score_check_time] = Time.now.to_i
-          vericite ||= VeriCite::Client.new(*self.context.vericite_settings)
+          vericite ||= VeriCite::Client.new()
           res = vericite.generateReport(self, asset_string)
           if res[:similarity_score]
             # keep track of when we updated the score so that we can ask VC again once it is stale (i.e. cache for 20 mins)
@@ -603,7 +603,7 @@ class Submission < ActiveRecord::Base
 
   def vericite_report_url(asset_string, user)
     if self.vericite_data_hash && self.vericite_data_hash[asset_string] && self.vericite_data_hash[asset_string][:similarity_score]
-      vericite = VeriCite::Client.new(*self.context.vericite_settings)
+      vericite = VeriCite::Client.new()
       if self.grants_right?(user, :grade)
         vericite.submissionReportUrl(self, user, asset_string)
       elsif self.grants_right?(user, :view_vericite_report)
@@ -637,7 +637,7 @@ class Submission < ActiveRecord::Base
   VERICITE_RETRY = 5
   def submit_to_vericite(attempt=0)
     return unless vericiteable? && self.context.vericite_settings
-    vericite = VeriCite::Client.new(*self.context.vericite_settings)
+    vericite = VeriCite::Client.new()
     reset_vericite_assets
 
     # Make sure the assignment exists and user is enrolled
