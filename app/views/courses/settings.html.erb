@@ -250,15 +250,6 @@
           <%= f.text_area :turnitin_comments, :style => "width: 90%; height: 50px;", :disabled => !can_manage %>
         </td>
       <% end %>
-      <% if @context.vericite_enabled? %>
-      </tr><tr>
-        <td class="form-label"><%= f.blabel :vericite_comments, :en => "VeriCite Comments" %></td>
-        <td class="nobr">
-          <span class="aside"><%= t('vericite', %{these comments will be shown to students when submitting a VeriCite-enabled assignment}) %></span>
-          <br/>
-          <%= f.text_area :vericite_comments, :style => "width: 90%; height: 50px;", :disabled => !can_manage %>
-        </td>
-      <% end %>
       </tr>
       <tr>
         <td class="form-label">

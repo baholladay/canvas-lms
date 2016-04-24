@@ -202,40 +202,6 @@ define([
         $link.text(I18n.t('notices.turnitin.invalid_settings', "invalid Turnitin settings, please check your account id and shared secret from Turnitin"))
       });
     });
-    
-    $("#vericite, #account_settings_global_includes, #enable_equella").change(function() {
-      var $myFieldset = $('#'+ $(this).attr('id') + '_settings'),
-          iAmChecked = $(this).attr('checked');
-      $myFieldset.showIf(iAmChecked);
-      if (!iAmChecked) {
-        $myFieldset.find("input,textarea").val("");
-      }
-    }).change();
-
-    $(".vericite_account_settings").change(function() {
-      $(".confirm_vericite_settings_link").text(I18n.t('links.vericite.confirm_settings', "confirm VeriCite settings"));
-    });
-    $(".confirm_vericite_settings_link").click(function(event) {
-      event.preventDefault();
-      var $link = $(this);
-      var url = $link.attr('href');
-      var account = $("#account_settings").getFormData({object_name: 'account'});
-      var vericite_data = {
-        vericite_account_id: account.vericite_account_id,
-        vericite_shared_secret: account.vericite_shared_secret,
-        vericite_host: account.vericite_host
-      }
-      $link.text(I18n.t('notices.vericite.checking_settings', "checking VeriCite settings..."));
-      $.getJSON(url, vericite_data, function(data) {
-        if(data && data.success) {
-          $link.text(I18n.t('notices.vericite.setings_confirmed', "VeriCite settings confirmed!"));
-        } else {
-          $link.text(I18n.t('notices.vericite.invalid_settings', "invalid VeriCite settings, please check your account id and shared secret from VeriCite"))
-        }
-      }, function(data) {
-        $link.text(I18n.t('notices.vericite.invalid_settings', "invalid VeriCite settings, please check your account id and shared secret from VeriCite"))
-      });
-    });
 
     // Admins tab
     $(".add_users_link").click(function(event) {

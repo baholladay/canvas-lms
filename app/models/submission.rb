@@ -62,8 +62,6 @@ class Submission < ActiveRecord::Base
     join_table: :canvadocs_submissions
 
   serialize :turnitin_data, Hash
-  
-  serialize :vericite_data_hash, Hash
 
   # this function will check if the score needs to be updated and update/save the new score if so,
   # otherwise, it just returns the vericite_data_hash  
@@ -84,6 +82,11 @@ class Submission < ActiveRecord::Base
       end
     end
     self.vericite_data_hash
+  end
+  
+  def vericite_data_hash
+    # use the same backend structure to store "content review" data
+    self.turnitin_data
   end
   
   # this function looks at a vericite data object and determines whether the score needs to be rechecked (i.e. cache for 20 mins) 

@@ -53,7 +53,7 @@ module CC::Importer::Canvas
       course[:migration_id] = get_node_att(doc, 'course',  'identifier')
 
       ['title', 'course_code', 'default_wiki_editing_roles',
-       'turnitin_comments', 'vericite_comments', 'default_view', 'license', 'locale',
+       'turnitin_comments', 'default_view', 'license', 'locale',
        'group_weighting_scheme', 'storage_quota', 'grading_standard_identifier_ref',
        'root_account_uuid'].each do |string_type|
         val = get_node_val(doc, string_type)

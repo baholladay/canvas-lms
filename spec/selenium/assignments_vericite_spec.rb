@@ -3,14 +3,6 @@ require File.expand_path(File.dirname(__FILE__) + '/common')
 describe "assignments turn it in" do
   include_context "in-process server selenium tests"
 
-  before (:each) do
-    course_with_teacher_logged_in
-    account = Account.default
-    account.vericite_account_id = 'asdf'
-    account.vericite_shared_secret = 'asdf'
-    account.save!
-  end
-
   def change_vericite_settings
     keep_trying_until {
       expect(f('#assignment_submission_type')).to be_displayed

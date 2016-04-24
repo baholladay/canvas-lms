@@ -1801,13 +1801,6 @@ describe AssignmentsApiController, type: :request do
     end
     
     context "when vericite is enabled on the context" do
-      before :once do
-        @assignment = @course.assignments.create!
-        acct = @course.account
-        acct.vericite_account_id = 0
-        acct.vericite_shared_secret = "blah"
-        acct.save!
-      end
 
       it "should allow setting vericite_enabled" do
         expect(@assignment).not_to be_vericite_enabled
@@ -2632,19 +2625,6 @@ describe AssignmentsApiController, type: :request do
 
       it "contains a turnitin_enabled key" do
         expect(result.has_key?('turnitin_enabled')).to eq true
-      end
-    end
-    
-    context "when vericite_enabled is true on the context" do
-      before {
-        @course.account.update_attributes! vericite_account_id: 1234,
-                                                vericite_shared_secret: 'foo',
-                                                vericite_host: 'example.com'
-        @assignment.reload
-      }
-
-      it "contains a vericite_enabled key" do
-        expect(result.has_key?('vericite_enabled')).to eq true
       end
     end
 

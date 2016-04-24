@@ -34,7 +34,6 @@ class Assignment < ActiveRecord::Base
   include SearchTermHelper
   include Canvas::DraftStateValidations
   include TurnitinID
-  include VericiteID
 
   attr_accessible :title, :name, :description, :due_at, :points_possible,
     :grading_type, :submission_types, :assignment_group, :unlock_at, :lock_at,
@@ -42,7 +41,7 @@ class Assignment < ActiveRecord::Base
     :peer_reviews_due_at, :peer_reviews_assign_at, :grading_standard_id,
     :peer_reviews, :automatic_peer_reviews, :grade_group_students_individually,
     :notify_of_update, :time_zone_edited, :turnitin_enabled, :vericite_enabled,
-    :turnitin_settings, :vericite_settings, :context, :position, :allowed_extensions,
+    :turnitin_settings, :context, :position, :allowed_extensions,
     :external_tool_tag_attributes, :freeze_on_copy,
     :only_visible_to_overrides, :post_to_sis, :integration_id, :integration_data, :moderated_grading
 
@@ -187,7 +186,6 @@ class Assignment < ActiveRecord::Base
     turnitin_enabled
     turnitin_settings
     vericite_enabled
-    vericite_settings
     allowed_extensions
     muted
     needs_grading_count
@@ -240,8 +238,6 @@ class Assignment < ActiveRecord::Base
   serialize :integration_data, Hash
 
   serialize :turnitin_settings, Hash
-  
-  serialize :vericite_settings, Hash
   
   # file extensions allowed for online_upload submission
   serialize :allowed_extensions, Array
@@ -371,23 +367,24 @@ class Assignment < ActiveRecord::Base
   end
   
   def create_in_vericite
-    return false unless self.context.vericite_settings
-    return true if self.vericite_settings[:current]
+    return false unless Canvas::Plugin.find(:vericite).try(:enabled?)
+    return true if self.turnitin_settings[:current] && self.turnitin_settings[:vericite] 
     vericite = VeriCite::Client.new()
-    res = vericite.createOrUpdateAssignment(self, self.vericite_settings)
+    res = vericite.createOrUpdateAssignment(self, self.turnitin_settings)
 
     # make sure the defaults get serialized
-    self.vericite_settings = vericite_settings
+    self.turnitin_settings = turnitin_settings
 
     if res[:assignment_id]
-      self.vericite_settings[:created] = true
-      self.vericite_settings[:current] = true
-      self.vericite_settings.delete(:error)
+      self.turnitin_settings[:created] = true
+      self.turnitin_settings[:current] = true
+      self.turnitin_settings[:vericite] = true
+      self.turnitin_settings.delete(:error)
     else
-      self.vericite_settings[:error] = res
+      self.turnitin_settings[:error] = res
     end
     self.save
-    return self.vericite_settings[:current]
+    return self.turnitin_settings[:current]
   end
 
   def turnitin_settings
@@ -395,7 +392,7 @@ class Assignment < ActiveRecord::Base
   end
   
   def vericite_settings
-    super.empty? ? VeriCite::Client.default_assignment_vericite_settings : super
+    turnitin_settings.empty? ? VeriCite::Client.default_assignment_vericite_settings : turnitin_settings
   end
 
   def turnitin_settings=(settings)
@@ -412,10 +409,10 @@ class Assignment < ActiveRecord::Base
     settings = VeriCite::Client.normalize_assignment_vericite_settings(settings)
     unless settings.blank?
       [:created, :error].each do |key|
-        settings[key] = self.vericite_settings[key] if self.vericite_settings[key]
+        settings[key] = self.turnitin_settings[key] if self.turnitin_settings[key]
       end
     end
-    write_attribute :vericite_settings, settings
+    write_attribute :turnitin_settings, settings
   end
 
   def self.all_day_interpretation(opts={})

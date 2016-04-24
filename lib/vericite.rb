@@ -70,8 +70,6 @@ module VeriCite
     def id(obj)
       if @testing
         "test_#{obj.asset_string}"
-      elsif obj.respond_to?(:vericite_id)
-        obj.vericite_asset_string
       else
         "#{account_id}_#{obj.asset_string}"
       end
@@ -81,8 +79,6 @@ module VeriCite
       # emails @example.com are, guaranteed by RFCs, to be like /dev/null :)
       email = if item.is_a?(User)
                 item.email
-              elsif item.respond_to?(:vericite_id)
-                "#{item.vericite_asset_string}@null.instructure.example.com"
               end
       email ||= "#{item.asset_string}@null.instructure.example.com"
     end

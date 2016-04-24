@@ -503,50 +503,6 @@ describe AccountsController do
         expect(response).not_to be_success
       end
     end
-    
-    context "vericite" do
-      before(:once) { account_with_admin }
-      before(:each) { user_session(@admin) }
-
-      it "should allow setting vericite values" do
-        post 'update', :id => @account.id, :account => {
-          :vericite_account_id => '123456',
-          :vericite_shared_secret => 'sekret',
-          :vericite_host => 'secret.vericite.com',
-          :vericite_pledge => 'i will do it',
-          :vericite_comments => 'good work',
-        }
-
-        @account.reload
-        expect(@account.vericite_account_id).to eq '123456'
-        expect(@account.vericite_shared_secret).to eq 'sekret'
-        expect(@account.vericite_host).to eq 'secret.vericite.com'
-        expect(@account.vericite_pledge).to eq 'i will do it'
-        expect(@account.vericite_comments).to eq 'good work'
-      end
-
-      it "should pull out the host from a valid url" do
-        post 'update', :id => @account.id, :account => {
-          :vericite_host => 'https://secret.vericite.com/'
-        }
-        expect(@account.reload.vericite_host).to eq 'secret.vericite.com'
-      end
-
-      it "should nil out the host if blank is passed" do
-        post 'update', :id => @account.id, :account => {
-          :vericite_host => ''
-        }
-        expect(@account.reload.vericite_host).to be_nil
-      end
-
-      it "should error on an invalid host" do
-        post 'update', :id => @account.id, :account => {
-          :vericite_host => 'blah'
-        }
-        expect(response).not_to be_success
-      end
-    end
-  end
 
   describe "#settings" do
     it "should load account report details" do

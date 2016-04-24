@@ -491,7 +491,6 @@ class AccountsController < ApplicationController
         end
 
         params[:account][:turnitin_host] = validated_turnitin_host(params[:account][:turnitin_host])
-        params[:account][:vericite_host] = validated_vericite_host(params[:account][:vericite_host])
         enable_user_notes = params[:account].delete :enable_user_notes
         allow_sis_import = params[:account].delete :allow_sis_import
         params[:account].delete :default_user_storage_quota_mb unless @account.root_account? && !@account.site_admin?
@@ -712,17 +711,6 @@ class AccountsController < ApplicationController
       end
     end
   end
-  
-  def vericite_confirmation
-    if authorized_action(@account, @current_user, :manage_account_settings)
-      host = validated_vericite_host(params[:vericite_host])
-      begin
-        render :json => { :success => true }
-      rescue
-        render :json => { :success => false }
-      end
-    end
-  end
 
   def load_course_right_side
     @root_account = @account.root_account
@@ -933,15 +921,6 @@ class AccountsController < ApplicationController
     if input_host.present?
       _, turnitin_uri = CanvasHttp.validate_url(input_host)
       turnitin_uri.host
-    else
-      nil
-    end
-  end
-  
-  def validated_vericite_host(input_host)
-    if input_host.present?
-      _, vericite_uri = CanvasHttp.validate_url(input_host)
-      vericite_uri.host
     else
       nil
     end

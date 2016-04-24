@@ -405,10 +405,6 @@ TEXT
                 <input type="checkbox" name="turnitin" id="turnitin" <%= 'checked' unless @account.turnitin_account_id.blank? %> />
                 <label for="turnitin"><%= t 'labels.turnitin', 'Turnitin' %></label>
               </div>
-              <div>
-                <input type="checkbox" name="vericite" id="vericite" <%= 'checked' unless @account.vericite_account_id.blank? %> />
-                <label for="vericite"><%= t 'labels.vericite', 'VeriCite' %></label>
-              </div>
              <% end %>
           <% end %>
           <%= f.fields_for :services do |services| %>
@@ -607,40 +603,8 @@ TEXT
               </tr>
             </table>
           </fieldset>
-          
-          <fieldset id="vericite_settings" style="display: none;">
-            <legend><%= t(:vericite_settings_title, "VeriCite Settings") %></legend>
-            <table class="formtable">
-              <tr>
-                <td><%= f.blabel :vericite_account_id, :en => "VeriCite Account ID" %></td>
-                <td><%= f.text_field :vericite_account_id, :class => "vericite_account_settings" %></td>
-              </tr>
-              <tr>
-                <td><%= f.blabel :vericite_shared_secret, :en => "VeriCite Shared Secret" %></td>
-                <td><%= f.text_field :vericite_shared_secret, :class => "vericite_account_settings" %></td>
-              </tr>
-              <tr>
-                <td><%= f.blabel :vericite_host, :en => "VeriCite Host" %></td>
-                <td><%= f.text_field :vericite_host, :class => "vericite_account_settings", :placeholder => "api.vericite.com" %></td>
-              </tr>
-              <tr>
-                <td><%= f.blabel :vericite_comments, :en => "Submission Comments" %></td>
-                <td>
-                  <span style="font-size: 0.9em;"><%= t(:vericite_comments_help, "these comments will be shown to students when submitting a VeriCite-enabled assignment") %></span>
-                  <%= f.text_area :vericite_comments, :style => "width: 90%; height: 50px;" %>
-                </td>
-              </tr>
-              <tr>
-                <td><%= f.blabel :vericite_pledge, :en => "VeriCite Pledge" %></td>
-                <td>
-                  <span style="font-size: 0.9em;"><%= t(:vericite_pledge_help, "students must check a box acknowledging that they agree with this pledge") %></span>
-                  <%= f.text_area :vericite_pledge, :style => "width: 90%; height: 50px;" %>
-                </td>
-              </tr>
-            </table>
-          </fieldset>
-        <% end %>
-
+	    <% end %>
+	         
         <% if @account.root_account? and not (exposed_services = Account.services_exposed_to_ui_hash(:service, @current_user)).empty? %>
           <fieldset>
             <legend><%= t(:enabled_web_serices_title, "Enabled Web Services") %></legend>

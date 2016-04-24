@@ -375,39 +375,6 @@ describe Account do
       expect(sub_account.closest_turnitin_pledge).not_to be_empty
     end
   end
-  
-  context "vericite secret" do
-    it "should decrypt the vericite secret to the original value" do
-      a = Account.new
-      a.vericite_shared_secret = "asdf"
-      expect(a.vericite_shared_secret).to eql("asdf")
-      a.vericite_shared_secret = "2t87aot72gho8a37gh4g[awg'waegawe-,v-3o7fya23oya2o3"
-      expect(a.vericite_shared_secret).to eql("2t87aot72gho8a37gh4g[awg'waegawe-,v-3o7fya23oya2o3")
-    end
-  end
-
-  context "closest_vericite_pledge" do
-    it "should work for custom sub, custom root" do
-      root_account = Account.create!(:vericite_pledge => "root")
-      sub_account = Account.create!(:parent_account => root_account, :vericite_pledge => "sub")
-      expect(root_account.closest_vericite_pledge).to eq "root"
-      expect(sub_account.closest_vericite_pledge).to eq "sub"
-    end
-
-    it "should work for nil sub, custom root" do
-      root_account = Account.create!(:vericite_pledge => "root")
-      sub_account = Account.create!(:parent_account => root_account)
-      expect(root_account.closest_vericite_pledge).to eq "root"
-      expect(sub_account.closest_vericite_pledge).to eq "root"
-    end
-
-    it "should work for nil sub, nil root" do
-      root_account = Account.create!
-      sub_account = Account.create!(:parent_account => root_account)
-      expect(root_account.closest_vericite_pledge).not_to be_empty
-      expect(sub_account.closest_vericite_pledge).not_to be_empty
-    end
-  end
 
   it "should make a default enrollment term if necessary" do
     a = Account.create!(:name => "nada")
