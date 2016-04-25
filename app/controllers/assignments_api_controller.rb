@@ -208,57 +208,6 @@
 #       }
 #     }
 #
-#
-# @model VeriCiteSettings
-#     {
-#       "id": "VeriCiteSettings",
-#       "description": "",
-#       "properties": {
-#         "originality_report_visibility": {
-#           "example": "after_grading",
-#           "type": "string"
-#         },
-#         "exclude_quoted": {
-#           "example": false,
-#           "type": "boolean"
-#         }
-#       }
-#     }
-#
-#
-# @model VeriCiteSettings
-#     {
-#       "id": "VeriCiteSettings",
-#       "description": "",
-#       "properties": {
-#         "originality_report_visibility": {
-#           "example": "after_grading",
-#           "type": "string"
-#         },
-#         "exclude_quoted": {
-#           "example": false,
-#           "type": "boolean"
-#         }
-#       }
-#     }
-#
-#
-# @model VeriCiteSettings
-#     {
-#       "id": "VeriCiteSettings",
-#       "description": "",
-#       "properties": {
-#         "originality_report_visibility": {
-#           "example": "after_grading",
-#           "type": "string"
-#         },
-#         "exclude_quoted": {
-#           "example": false,
-#           "type": "boolean"
-#         }
-#       }
-#     }
-#
 # @model NeedsGradingCount
 #     {
 #       "id": "NeedsGradingCount",
@@ -368,22 +317,9 @@
 #           "example": true,
 #           "type": "boolean"
 #         },
-#         "vericite_enabled": {
-#           "description": "Boolean flag indicating whether or not VeriCite has been enabled for the assignment. NOTE: This flag will not appear unless your account has the VeriCite plugin available",
-#           "example": true,
-#           "type": "boolean"
-#         },
 #         "turnitin_settings": {
 #           "description": "Settings to pass along to turnitin to control what kinds of matches should be considered. originality_report_visibility can be 'immediate', 'after_grading', 'after_due_date', or 'never' exclude_small_matches_type can be null, 'percent', 'words' exclude_small_matches_value: - if type is null, this will be null also - if type is 'percent', this will be a number between 0 and 100 representing match size to exclude as a percentage of the document size. - if type is 'words', this will be number > 0 representing how many words a match must contain for it to be considered NOTE: This flag will not appear unless your account has the Turnitin plugin available",
 #           "$ref": "TurnitinSettings"
-#         },
-#         "vericite_settings": {
-#           "description": "Settings to pass along to VeriCite to control what kinds of matches should be considered. originality_report_visibility can be 'immediate', 'after_grading', 'after_due_date', or 'never' exclude_small_matches_type can be null, 'percent', 'words' exclude_small_matches_value: - if type is null, this will be null also - if type is 'percent', this will be a number between 0 and 100 representing match size to exclude as a percentage of the document size. - if type is 'words', this will be number > 0 representing how many words a match must contain for it to be considered NOTE: This flag will not appear unless your account has the VeriCite plugin available",
-#           "$ref": "VeriCiteSettings"
-#         },
-#         "vericite_settings": {
-#           "description": "Settings to pass along to VeriCite to control what kinds of matches should be considered. originality_report_visibility can be 'immediate', 'after_grading', 'after_due_date', or 'never' exclude_small_matches_type can be null, 'percent', 'words' exclude_small_matches_value: - if type is null, this will be null also - if type is 'percent', this will be a number between 0 and 100 representing match size to exclude as a percentage of the document size. - if type is 'words', this will be number > 0 representing how many words a match must contain for it to be considered NOTE: This flag will not appear unless your account has the VeriCite plugin available",
-#           "$ref": "VeriCiteSettings"
 #         },
 #         "grade_group_students_individually": {
 #           "description": "If this is a group assignment, boolean flag indicating whether or not students will be graded individually.",
@@ -809,22 +745,8 @@ class AssignmentsApiController < ApplicationController
   #   Toggles VeriCite submissions for the assignment.
   #   Will be ignored if VeriCite is not available for the course.
   #
-  # @argument assignment[vericite_enabled] [Boolean]
-  #   Only applies when the VeriCite plugin is enabled for a course and
-  #   the submission_types array includes "online_upload".
-  #   Toggles VeriCite submissions for the assignment.
-  #   Will be ignored if VeriCite is not available for the course.
-  #
   # @argument assignment[turnitin_settings]
   #   Settings to send along to turnitin. See Assignment object definition for
-  #   format.
-  #
-  # @argument assignment[vericite_settings]
-  #   Settings to send along to VeriCite. See Assignment object definition for
-  #   format.
-  #
-  # @argument assignment[vericite_settings]
-  #   Settings to send along to VeriCite. See Assignment object definition for
   #   format.
   #
   # @argument assignment[integration_data]
@@ -973,22 +895,8 @@ class AssignmentsApiController < ApplicationController
   #   Toggles VeriCite submissions for the assignment.
   #   Will be ignored if VeriCite is not available for the course.
   #
-  # @argument assignment[vericite_enabled] [Boolean]
-  #   Only applies when the VeriCite plugin is enabled for a course and
-  #   the submission_types array includes "online_upload".
-  #   Toggles VeriCite submissions for the assignment.
-  #   Will be ignored if VeriCite is not available for the course.
-  #
   # @argument assignment[turnitin_settings]
   #   Settings to send along to turnitin. See Assignment object definition for
-  #   format.
-  #
-  # @argument assignment[vericite_settings]
-  #   Settings to send along to VeriCite. See Assignment object definition for
-  #   format.
-  #
-  # @argument assignment[vericite_settings]
-  #   Settings to send along to VeriCite. See Assignment object definition for
   #   format.
   #
   # @argument assignment[integration_data]

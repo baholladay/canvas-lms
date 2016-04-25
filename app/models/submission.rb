@@ -293,7 +293,7 @@ class Submission < ActiveRecord::Base
     can :read and can :comment
 
     given { |user, session|
-      turnitin_data &&
+      self.turnitinable? && turnitin_data &&
       user_can_read_grade?(user, session) &&
       (assignment.context.grants_right?(user, session, :manage_grades) ||
         case assignment.turnitin_settings[:originality_report_visibility]
@@ -307,7 +307,7 @@ class Submission < ActiveRecord::Base
     can :view_turnitin_report
     
     given { |user, session|
-      vericite_data_hash &&
+      self.vericiteable? && vericite_data_hash &&
       user_can_read_grade?(user, session) &&
       (assignment.context.grants_right?(user, session, :manage_grades) ||
         case assignment.vericite_settings[:originality_report_visibility]
@@ -639,7 +639,7 @@ class Submission < ActiveRecord::Base
 
   VERICITE_RETRY = 5
   def submit_to_vericite(attempt=0)
-    return unless vericiteable? && self.context.vericite_settings
+    return unless vericiteable? && Canvas::Plugin.find(:vericite).try(:enabled?)
     vericite = VeriCite::Client.new()
     reset_vericite_assets
 
@@ -912,7 +912,7 @@ class Submission < ActiveRecord::Base
     self.versions.sort_by(&:created_at).reverse_each do |version|
       model = version.model
       # since vericite_data is a function, make sure you are cloning the most recent vericite_data_hash
-      model.vericite_data_hash = self.vericite_data
+      model.turnitin_data = self.vericite_data
       if model.submitted_at && last_submitted_at.to_i != model.submitted_at.to_i
         res << model
         last_submitted_at = model.submitted_at
